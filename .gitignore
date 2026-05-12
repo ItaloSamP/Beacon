@@ -25,5 +25,8 @@ venv/
 .coverage
 htmlcov/
 
+# Frontend coverage (generated)
+frontend/coverage/
+
 # Alembic
 alembic/versions/*.pyc
