@@ -1,6 +1,6 @@
 # Task: task-sprint-0 — Sprint 0: Skeleton Funcional
 
-## Status: READY_TO_COMMIT
+## Status: DONE
 
 ## Metadata
 - **Type:** feature
