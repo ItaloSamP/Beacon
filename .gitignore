@@ -1,0 +1,29 @@
+# Editor/IDE
+.claude/skills/
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+.opencode/node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic
+alembic/versions/*.pyc
