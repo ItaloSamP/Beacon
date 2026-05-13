@@ -1,5 +1,7 @@
 from email_validator import validate_email, EmailNotValidError
 
+from app.shared.config import settings
+
 from app.domain.models import User
 from app.infrastructure.repositories.user_repo import UserRepository
 from app.infrastructure.security import (
@@ -18,7 +20,7 @@ class AuthService:
 
     async def register(self, email: str, password: str, name: str) -> dict:
         try:
-            valid = validate_email(email)
+            valid = validate_email(email, check_deliverability=settings.EMAIL_CHECK_DELIVERABILITY)
             email = valid.normalized
         except EmailNotValidError:
             raise ValidationException("Invalid email format", error_code="invalid_email")
