@@ -6,7 +6,7 @@ from app.presentation.api.router import router
 from app.shared.config import settings
 from app.shared.exceptions import AppException
 
-app = FastAPI(title="Data Health Monitor", version=settings.APP_VERSION)
+app = FastAPI(title="Beacon", version=settings.APP_VERSION)
 
 app.add_middleware(
     CORSMiddleware,

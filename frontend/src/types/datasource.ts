@@ -5,6 +5,8 @@ export interface DataSource {
   id: string;
   name: string;
   type: DataSourceType;
+  agent_id?: string | null;
+  agent?: { id: string; name: string; status: string } | null;
   connection_config: Record<string, unknown>;
   status: DataSourceStatus;
   created_at: string;
@@ -14,6 +16,7 @@ export interface DataSource {
 export interface CreateDataSourceRequest {
   name: string;
   type: DataSourceType;
+  agent_id?: string;
   connection_config: Record<string, unknown>;
   status: DataSourceStatus;
 }
@@ -21,6 +24,7 @@ export interface CreateDataSourceRequest {
 export interface UpdateDataSourceRequest {
   name?: string;
   type?: DataSourceType;
+  agent_id?: string | null;
   connection_config?: Record<string, unknown>;
   status?: DataSourceStatus;
 }

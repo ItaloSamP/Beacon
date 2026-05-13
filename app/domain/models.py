@@ -13,6 +13,11 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+class AgentStatus(str, enum.Enum):
+    online = "online"
+    offline = "offline"
+
+
 class DataSourceType(str, enum.Enum):
     postgres = "postgres"
     mysql = "mysql"
@@ -64,16 +69,36 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
+    agents = relationship("Agent", back_populates="user", cascade="all, delete-orphan")
+
+
+class Agent(Base):
+    __tablename__ = "agents"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status = Column(SAEnum(AgentStatus), default=AgentStatus.offline, nullable=False)
+    last_heartbeat_at = Column(DateTime(timezone=True), nullable=True)
+    version = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    user = relationship("User", back_populates="agents")
+    data_sources = relationship("DataSource", back_populates="agent")
+
 
 class DataSource(Base):
     __tablename__ = "data_sources"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     type = Column(SAEnum(DataSourceType), nullable=False)
+    # TODO: Make agent_id NOT NULL in Sprint 1
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
     connection_config = Column(JSONB, default=dict, nullable=False)
     status = Column(SAEnum(DataSourceStatus), default=DataSourceStatus.active, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    agent = relationship("Agent", back_populates="data_sources")
     pipelines = relationship("Pipeline", back_populates="data_source", cascade="all, delete-orphan")
 
 

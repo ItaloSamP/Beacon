@@ -3,7 +3,7 @@ from typing import Any, Optional
 from uuid import UUID
 from datetime import datetime
 
-from app.domain.models import DataSourceType, DataSourceStatus, PipelineType
+from app.domain.models import DataSourceType, DataSourceStatus, PipelineType, AgentStatus
 
 
 class ApiResponse(BaseModel):
@@ -81,6 +81,7 @@ class RefreshResponse(ApiResponse):
 class DataSourceCreate(BaseModel):
     name: str
     type: DataSourceType
+    agent_id: Optional[UUID] = None
     connection_config: dict = {}
     status: DataSourceStatus = DataSourceStatus.active
 
@@ -95,6 +96,7 @@ class DataSourceCreate(BaseModel):
 class DataSourceUpdate(BaseModel):
     name: Optional[str] = None
     type: Optional[DataSourceType] = None
+    agent_id: Optional[UUID] = None
     connection_config: Optional[dict] = None
     status: Optional[DataSourceStatus] = None
 
@@ -103,6 +105,8 @@ class DataSourceResponse(BaseModel):
     id: str
     name: str
     type: str
+    agent_id: Optional[str] = None
+    agent: Optional[dict] = None
     connection_config: dict
     status: str
     created_at: datetime
@@ -190,6 +194,44 @@ class ApiKeyListResponse(BaseModel):
     last_used_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
     revoked: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AgentCreate(BaseModel):
+    name: str
+    status: AgentStatus = AgentStatus.offline
+    version: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("name must not be empty")
+        return v
+
+
+class AgentUpdate(BaseModel):
+    name: Optional[str] = None
+    status: Optional[AgentStatus] = None
+    version: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and (not v or not v.strip()):
+            raise ValueError("name must not be empty")
+        return v
+
+
+class AgentResponse(BaseModel):
+    id: str
+    name: str
+    status: str
+    user_id: str
+    last_heartbeat_at: Optional[datetime] = None
+    version: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
