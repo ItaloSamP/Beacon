@@ -2,7 +2,7 @@ import asyncio
 import uuid
 
 from app.infrastructure.database import async_session_factory, Base, engine
-from app.domain.models import User, DataSource, Pipeline
+from app.domain.models import User, Agent, DataSource, Pipeline
 from app.infrastructure.security import hash_password
 
 
@@ -14,16 +14,26 @@ async def seed():
         user_id = uuid.uuid4()
         user = User(
             id=user_id,
-            email="admin@dhm.local",
+            email="admin@beacon.local",
             password_hash=hash_password("admin123"),
             name="Admin",
         )
         session.add(user)
 
+        agent = Agent(
+            id=uuid.uuid4(),
+            name="Production Agent",
+            user_id=user_id,
+            status="online",
+            version="0.1.0",
+        )
+        session.add(agent)
+
         pg_ds = DataSource(
             id=uuid.uuid4(),
             name="Production Postgres",
             type="postgres",
+            agent_id=agent.id,
             connection_config={
                 "host": "prod-db.internal",
                 "port": 5432,
@@ -39,6 +49,7 @@ async def seed():
             id=uuid.uuid4(),
             name="Marketing BigQuery",
             type="bigquery",
+            agent_id=agent.id,
             connection_config={"project": "my-project", "dataset": "marketing"},
             status="active",
         )
@@ -67,10 +78,11 @@ async def seed():
         session.add(pipeline2)
 
         await session.commit()
-        print("Seed completed successfully.")
-        print(f"  Admin user: admin@dhm.local / admin123")
-        print(f"  {2} data sources created.")
-        print(f"  {2} pipelines created.")
+        print("Beacon seed completed successfully.")
+        print("  Admin user: admin@beacon.local / admin123")
+        print("  1 agent created.")
+        print("  2 data sources created.")
+        print("  2 pipelines created.")
 
 
 if __name__ == "__main__":
