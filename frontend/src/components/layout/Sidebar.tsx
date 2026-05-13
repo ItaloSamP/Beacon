@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { Database, GitBranch, AlertTriangle, Bell, LayoutDashboard } from 'lucide-react';
+import { Database, GitBranch, AlertTriangle, Bell, LayoutDashboard, Server } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/agents', label: 'Agents', icon: Server },
   { to: '/datasources', label: 'DataSources', icon: Database },
   { to: '/pipelines', label: 'Pipelines', icon: GitBranch },
   { to: '/anomalies', label: 'Anomalies', icon: AlertTriangle },
@@ -12,7 +13,7 @@ const navItems = [
 export function Sidebar() {
   return (
     <aside className="w-64 bg-gray-900 text-white flex flex-col h-screen">
-      <div className="p-4 text-xl font-bold border-b border-gray-700">DHM</div>
+      <div className="p-4 text-xl font-bold border-b border-gray-700">Beacon</div>
       <nav className="flex-1 p-2 space-y-1">
         {navItems.map(item => (
           <NavLink

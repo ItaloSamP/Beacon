@@ -6,6 +6,8 @@ import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DataSourcesListPage } from './features/datasources/DataSourcesListPage';
 import { DataSourceForm } from './features/datasources/DataSourceForm';
+import { AgentsListPage } from './features/agents/AgentsListPage';
+import { AgentForm } from './features/agents/AgentForm';
 import { PipelinesPlaceholder } from './features/pipelines/PipelinesPlaceholder';
 import { AnomaliesPlaceholder } from './features/anomalies/AnomaliesPlaceholder';
 import { AlertsPlaceholder } from './features/alerts/AlertsPlaceholder';
@@ -28,6 +30,9 @@ export function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<Shell />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/agents" element={<AgentsListPage />} />
+              <Route path="/agents/new" element={<AgentForm />} />
+              <Route path="/agents/:id/edit" element={<AgentForm />} />
               <Route path="/datasources" element={<DataSourcesListPage />} />
               <Route path="/datasources/new" element={<DataSourceForm />} />
               <Route path="/datasources/:id/edit" element={<DataSourceForm />} />
