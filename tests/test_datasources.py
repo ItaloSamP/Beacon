@@ -7,8 +7,10 @@ Tests full HTTP lifecycle:
 - GET /api/v1/datasources/{id} (200 detail, 404 missing)
 - PUT /api/v1/datasources/{id} (200 update)
 - DELETE /api/v1/datasources/{id} (204 delete, 404 missing)
+- Agent relationship: agent_id field, validation, response enrichment
 
-RED PHASE: All tests WILL FAIL because routes don't exist yet.
+RED PHASE: Tests that reference agent_id will fail because the
+agent-related schema fields and route logic don't exist yet.
 """
 
 import pytest
@@ -503,3 +505,196 @@ class TestDeleteDataSource:
             f"/api/v1/datasources/{sample_datasource['id']}"
         )
         assert response.status_code == 401
+
+
+class TestDataSourceAgentRelationship:
+    """Tests for DataSource ↔ Agent relationship via agent_id field."""
+
+    @pytest.mark.asyncio
+    async def test_create_datasource_with_agent_id(
+        self, async_client: AsyncClient, auth_headers: dict, sample_agent: dict, test_db
+    ):
+        """
+        Creating a DataSource with a valid agent_id should succeed
+        and include the agent_id in the response.
+        """
+        payload = {
+            "name": "Agent-Linked DS",
+            "type": "postgres",
+            "connection_config": {"host": "db1"},
+            "status": "active",
+            "agent_id": sample_agent["id"],
+        }
+
+        response = await async_client.post(
+            "/api/v1/datasources", json=payload, headers=auth_headers
+        )
+
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.json()}"
+        )
+
+        data = response.json()["data"]
+        assert data.get("agent_id") == sample_agent["id"], (
+            f"Response should include agent_id={sample_agent['id']}, got {data.get('agent_id')}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_datasource_without_agent_id_succeeds(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """
+        Creating a DataSource without agent_id should succeed (field is optional).
+        """
+        payload = {
+            "name": "No Agent DS",
+            "type": "postgres",
+            "connection_config": {"host": "db2"},
+            "status": "active",
+        }
+
+        response = await async_client.post(
+            "/api/v1/datasources", json=payload, headers=auth_headers
+        )
+
+        assert response.status_code == 201, (
+            f"Creating without agent_id should succeed (optional), got {response.status_code}"
+        )
+
+        data = response.json()["data"]
+        # agent_id may be None or absent
+        assert data.get("agent_id") is None or "agent_id" not in data
+
+    @pytest.mark.asyncio
+    async def test_create_datasource_with_invalid_agent_id(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """
+        Creating a DataSource with a non-existent agent_id should return
+        an error (404 or 422).
+        """
+        payload = {
+            "name": "Bad Agent DS",
+            "type": "postgres",
+            "connection_config": {"host": "db3"},
+            "status": "active",
+            "agent_id": "00000000-0000-0000-0000-000000000000",
+        }
+
+        response = await async_client.post(
+            "/api/v1/datasources", json=payload, headers=auth_headers
+        )
+
+        # Should fail with either 404 (agent not found) or 422 (invalid reference)
+        assert response.status_code in (404, 422), (
+            f"Expected 404 or 422 for invalid agent_id, got {response.status_code}: {response.json()}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_datasource_response_includes_agent_info(
+        self, async_client: AsyncClient, auth_headers: dict, sample_agent: dict, test_db
+    ):
+        """
+        When a DataSource has an agent_id, the response should include
+        basic agent information (id, name, status).
+        """
+        # Create a datasource linked to the agent
+        create_resp = await async_client.post(
+            "/api/v1/datasources",
+            json={
+                "name": "DS with Agent Info",
+                "type": "postgres",
+                "connection_config": {},
+                "status": "active",
+                "agent_id": sample_agent["id"],
+            },
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        ds_id = create_resp.json()["data"]["id"]
+
+        # Get the datasource and check for agent info
+        get_resp = await async_client.get(
+            f"/api/v1/datasources/{ds_id}", headers=auth_headers
+        )
+        assert get_resp.status_code == 200
+        data = get_resp.json()["data"]
+
+        # Should include agent_id
+        assert data.get("agent_id") == sample_agent["id"]
+
+        # Should include agent summary if the API enriches the response
+        if "agent" in data:
+            assert "id" in data["agent"]
+            assert "name" in data["agent"]
+
+    @pytest.mark.asyncio
+    async def test_update_datasource_agent_id(
+        self, async_client: AsyncClient, auth_headers: dict, sample_agent: dict, test_db
+    ):
+        """
+        Updating a DataSource to add or change agent_id should work.
+        """
+        # Create a datasource without agent_id
+        create_resp = await async_client.post(
+            "/api/v1/datasources",
+            json={
+                "name": "Unlinked DS",
+                "type": "postgres",
+                "connection_config": {},
+                "status": "active",
+            },
+            headers=auth_headers,
+        )
+        ds_id = create_resp.json()["data"]["id"]
+
+        # Update to add agent_id
+        update_resp = await async_client.put(
+            f"/api/v1/datasources/{ds_id}",
+            json={"agent_id": sample_agent["id"]},
+            headers=auth_headers,
+        )
+        assert update_resp.status_code == 200
+        assert update_resp.json()["data"].get("agent_id") == sample_agent["id"]
+
+        # Update to remove agent_id (set to null)
+        update_resp2 = await async_client.put(
+            f"/api/v1/datasources/{ds_id}",
+            json={"agent_id": None},
+            headers=auth_headers,
+        )
+        assert update_resp2.status_code == 200
+        # agent_id should now be None (or not included)
+        assert update_resp2.json()["data"].get("agent_id") is None
+
+    @pytest.mark.asyncio
+    async def test_list_datasources_with_agent_filter(
+        self, async_client: AsyncClient, auth_headers: dict, sample_agent: dict, test_db
+    ):
+        """
+        Listing datasources should support filtering by agent_id (if implemented).
+        """
+        # Create a datasource linked to the agent
+        await async_client.post(
+            "/api/v1/datasources",
+            json={
+                "name": "Filtered by Agent",
+                "type": "postgres",
+                "connection_config": {},
+                "status": "active",
+                "agent_id": sample_agent["id"],
+            },
+            headers=auth_headers,
+        )
+
+        # Try filtering by agent_id
+        response = await async_client.get(
+            f"/api/v1/datasources?agent_id={sample_agent['id']}",
+            headers=auth_headers,
+        )
+
+        # If filtering is supported, all results should have matching agent_id
+        if response.status_code == 200:
+            for ds in response.json()["data"]:
+                if "agent_id" in ds:
+                    assert ds["agent_id"] == sample_agent["id"] or ds["agent_id"] is None

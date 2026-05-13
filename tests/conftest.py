@@ -1,17 +1,16 @@
 """
-Test fixtures for Data Health Monitor backend.
+Test fixtures for Beacon backend.
 
-RED PHASE: These imports WILL FAIL because the app/ modules don't exist yet.
-Pytest will show collection errors — this is expected for TDD RED phase.
-
-Once the executor creates the implementation modules, these fixtures will:
+These fixtures provide:
 - Create a FastAPI TestClient for HTTP integration tests
 - Manage test database lifecycle (create/drop tables per test)
 - Provide pre-authenticated auth headers
-- Provide sample data for CRUD tests
+- Provide sample data for CRUD tests (Agent, DataSource, Pipeline)
 """
 
-import pytest
+import os
+os.environ["EMAIL_CHECK_DELIVERABILITY"] = "false"
+
 import pytest_asyncio
 
 from httpx import AsyncClient, ASGITransport
@@ -21,15 +20,6 @@ from httpx import AsyncClient, ASGITransport
 # ============================================================
 from app.main import app
 from app.infrastructure.database import get_db, engine, Base, async_session_factory
-from app.domain.models import User, DataSource, Pipeline, PipelineRun, Anomaly, Alert, AlertRule, ApiKey
-from app.infrastructure.security import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    decode_token,
-)
-from app.application.auth_service import AuthService
 
 
 # ============================================================
@@ -137,11 +127,33 @@ async def user_email_and_password() -> tuple:
 # ============================================================
 
 @pytest_asyncio.fixture(scope="function")
-async def sample_datasource(async_client: AsyncClient, auth_headers: dict) -> dict:
+async def sample_agent(async_client: AsyncClient, auth_headers: dict) -> dict:
+    """
+    Create a sample Agent via the API and return its data dict.
+
+    This fixture depends on auth_headers so the user is already created.
+    """
+    payload = {
+        "name": "Test Production Agent",
+        "status": "online",
+        "version": "0.1.0",
+    }
+
+    response = await async_client.post(
+        "/api/v1/agents", json=payload, headers=auth_headers
+    )
+    assert response.status_code == 201, f"Failed to create sample agent: {response.json()}"
+
+    return response.json()["data"]
+
+
+@pytest_asyncio.fixture(scope="function")
+async def sample_datasource(async_client: AsyncClient, auth_headers: dict, sample_agent: dict) -> dict:
     """
     Create a sample DataSource via the API and return its data dict.
 
-    This fixture depends on auth_headers so the user is already created.
+    This fixture depends on auth_headers and sample_agent so both
+    the user and agent are already created. The datasource is linked to the agent.
     """
     payload = {
         "name": "Test PostgreSQL DB",
@@ -154,6 +166,7 @@ async def sample_datasource(async_client: AsyncClient, auth_headers: dict) -> di
             "password": "test_pass",
         },
         "status": "active",
+        "agent_id": sample_agent["id"],
     }
 
     response = await async_client.post(

@@ -112,13 +112,25 @@ export const authHandlers = [
 // DataSource handlers
 // ============================================================
 
-let mockDataSources = [
+let mockDataSources: Array<{
+  id: string;
+  name: string;
+  type: string;
+  connection_config: Record<string, unknown>;
+  status: string;
+  agent_id: string | null;
+  agent: { id: string; name: string; status: string } | null;
+  created_at: string;
+  updated_at: string;
+}> = [
   {
     id: 'ds-uuid-001',
     name: 'Production PostgreSQL',
     type: 'postgres',
     connection_config: { host: 'prod.db', port: 5432 },
     status: 'active',
+    agent_id: 'agent-uuid-001',
+    agent: { id: 'agent-uuid-001', name: 'Production Agent', status: 'online' },
     created_at: '2026-05-12T00:00:00Z',
     updated_at: '2026-05-12T00:00:00Z',
   },
@@ -128,6 +140,8 @@ let mockDataSources = [
     type: 'mysql',
     connection_config: { host: 'analytics.db', port: 3306 },
     status: 'active',
+    agent_id: 'agent-uuid-002',
+    agent: { id: 'agent-uuid-002', name: 'Staging Agent', status: 'offline' },
     created_at: '2026-05-12T01:00:00Z',
     updated_at: '2026-05-12T01:00:00Z',
   },
@@ -137,6 +151,8 @@ let mockDataSources = [
     type: 'bigquery',
     connection_config: {},
     status: 'inactive',
+    agent_id: null,
+    agent: null,
     created_at: '2026-05-11T00:00:00Z',
     updated_at: '2026-05-11T00:00:00Z',
   },
@@ -191,6 +207,10 @@ export const datasourceHandlers = [
       type: body.type,
       connection_config: body.connection_config || {},
       status: body.status || 'active',
+      agent_id: body.agent_id || null,
+      agent: body.agent_id
+        ? { id: body.agent_id, name: 'Mock Agent', status: 'online' }
+        : null,
       created_at: '2026-05-12T12:00:00Z',
       updated_at: '2026-05-12T12:00:00Z',
     };
@@ -384,6 +404,155 @@ export const pipelineHandlers = [
 ];
 
 // ============================================================
+// Agent handlers
+// ============================================================
+
+let mockAgents: Array<{
+  id: string;
+  name: string;
+  status: string;
+  user_id: string;
+  last_heartbeat_at: string | null;
+  version: string | null;
+  created_at: string;
+}> = [
+  {
+    id: 'agent-uuid-001',
+    name: 'Production Agent',
+    status: 'online',
+    user_id: 'mock-user-uuid',
+    last_heartbeat_at: '2026-05-12T12:00:00Z',
+    version: '0.1.0',
+    created_at: '2026-05-12T00:00:00Z',
+  },
+  {
+    id: 'agent-uuid-002',
+    name: 'Staging Agent',
+    status: 'offline',
+    user_id: 'mock-user-uuid',
+    last_heartbeat_at: null,
+    version: '0.1.0',
+    created_at: '2026-05-12T01:00:00Z',
+  },
+];
+
+export const agentHandlers = [
+  // GET /api/v1/agents
+  http.get(`${API_BASE}/agents`, ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const perPage = parseInt(url.searchParams.get('per_page') || '50');
+
+    let filtered = [...mockAgents];
+
+    if (status) {
+      filtered = filtered.filter((a) => a.status === status);
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * perPage;
+    const pageData = filtered.slice(start, start + perPage);
+
+    return HttpResponse.json(
+      {
+        data: pageData,
+        meta: { page, per_page: perPage, total },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // POST /api/v1/agents
+  http.post(`${API_BASE}/agents`, async ({ request }) => {
+    const body = await request.json() as Record<string, string>;
+
+    if (!body.name || !body.name.trim()) {
+      return HttpResponse.json(
+        { data: null, error: 'validation_error', message: 'Name is required' },
+        { status: 422 }
+      );
+    }
+
+    const newAgent = {
+      id: `agent-uuid-${Date.now()}`,
+      name: body.name,
+      status: body.status || 'offline',
+      user_id: 'mock-user-uuid',
+      last_heartbeat_at: null,
+      version: body.version || null,
+      created_at: '2026-05-12T12:00:00Z',
+    };
+
+    mockAgents.push(newAgent);
+
+    return HttpResponse.json(
+      { data: newAgent, error: null },
+      { status: 201 }
+    );
+  }),
+
+  // GET /api/v1/agents/:id
+  http.get(`${API_BASE}/agents/:id`, ({ params }) => {
+    const { id } = params;
+    const agent = mockAgents.find((a) => a.id === id);
+
+    if (!agent) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Agent not found' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json(
+      { data: agent, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // PUT /api/v1/agents/:id
+  http.put(`${API_BASE}/agents/:id`, async ({ request, params }) => {
+    const { id } = params;
+    const body = await request.json() as Record<string, string>;
+    const index = mockAgents.findIndex((a) => a.id === id);
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Agent not found' },
+        { status: 404 }
+      );
+    }
+
+    mockAgents[index] = {
+      ...mockAgents[index],
+      ...body,
+    };
+
+    return HttpResponse.json(
+      { data: mockAgents[index], error: null },
+      { status: 200 }
+    );
+  }),
+
+  // DELETE /api/v1/agents/:id
+  http.delete(`${API_BASE}/agents/:id`, ({ params }) => {
+    const { id } = params;
+    const index = mockAgents.findIndex((a) => a.id === id);
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Agent not found' },
+        { status: 404 }
+      );
+    }
+
+    mockAgents.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+];
+
+// ============================================================
 // API Key handlers
 // ============================================================
 
@@ -395,8 +564,8 @@ export const apiKeyHandlers = [
         data: {
           id: 'apikey-uuid-001',
           name: body.name || 'Test Key',
-          prefix: 'dhm_',
-          key: 'dhm_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
+          prefix: 'bcn_',
+          key: 'bcn_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
           expires_at: body.expires_at || null,
           created_at: '2026-05-12T00:00:00Z',
         },
@@ -413,7 +582,7 @@ export const apiKeyHandlers = [
           {
             id: 'apikey-uuid-001',
             name: 'Test Key',
-            prefix: 'dhm_',
+            prefix: 'bcn_',
             last_used_at: null,
             expires_at: null,
             revoked: false,
@@ -446,5 +615,6 @@ export const handlers = [
   ...datasourceHandlers,
   ...healthHandlers,
   ...pipelineHandlers,
+  ...agentHandlers,
   ...apiKeyHandlers,
 ];

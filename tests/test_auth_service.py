@@ -12,7 +12,7 @@ RED PHASE: All tests WILL FAIL because AuthService doesn't exist yet.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 # ============================================================
 # IMPORTS THAT WILL FAIL (RED PHASE)
@@ -73,7 +73,7 @@ class TestAuthServiceRegister:
         """Mock UserRepository with AsyncMock methods."""
         repo = AsyncMock()
         repo.get_by_email = AsyncMock(return_value=None)  # No existing user
-        repo.create = AsyncMock()
+        repo.create = AsyncMock(side_effect=lambda user: user)  # Return the created user
         return repo
 
     @pytest.fixture
