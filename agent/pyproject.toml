@@ -1,0 +1,5 @@
+[project]
+name = "beacon-agent"
+version = "0.1.0"
+description = "Beacon Local Agent — profiling and anomaly detection on client infrastructure"
+requires-python = ">=3.13"

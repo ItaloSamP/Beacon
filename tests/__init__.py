@@ -1,1 +1,1 @@
-"""Test suite for Data Health Monitor backend."""
+"""Test suite for Beacon backend."""

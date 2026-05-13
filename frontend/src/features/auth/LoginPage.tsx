@@ -38,7 +38,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Data Health Monitor</h1>
+        <h1 className="text-2xl font-bold text-center mb-6">Beacon</h1>
         <h2 className="text-lg font-medium text-gray-600 text-center mb-6">Sign in to your account</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

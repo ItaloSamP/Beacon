@@ -8,16 +8,6 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.infrastructure.database import Base
-from app.domain.models import (
-    User,
-    DataSource,
-    Pipeline,
-    PipelineRun,
-    Anomaly,
-    Alert,
-    AlertRule,
-    ApiKey,
-)
 
 config = context.config
 

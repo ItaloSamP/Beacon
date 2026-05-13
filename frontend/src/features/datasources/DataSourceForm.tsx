@@ -8,7 +8,8 @@ import { Card } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Spinner';
 import { api } from '../../lib/api';
 import type { DataSource, CreateDataSourceRequest, DataSourceType, DataSourceStatus } from '../../types/datasource';
-import type { ApiResponse } from '../../types/api';
+import type { Agent } from '../../types/agent';
+import type { ApiResponse, PaginatedResponse } from '../../types/api';
 
 const TYPE_OPTIONS = [
   { value: 'postgres', label: 'PostgreSQL' },
@@ -32,6 +33,7 @@ export function DataSourceForm() {
   const [name, setName] = useState('');
   const [type, setType] = useState<DataSourceType>('postgres');
   const [status, setStatus] = useState<DataSourceStatus>('active');
+  const [agentId, setAgentId] = useState('');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('');
   const [database, setDatabase] = useState('');
@@ -45,12 +47,24 @@ export function DataSourceForm() {
     enabled: isEdit,
   });
 
+  const { data: agentsData } = useQuery({
+    queryKey: ['agents'],
+    queryFn: () => api.get<PaginatedResponse<Agent>>('/agents'),
+  });
+
+  const agents = agentsData?.data ?? [];
+  const agentOptions = [
+    { value: '', label: '— None —' },
+    ...agents.map(a => ({ value: a.id, label: a.name })),
+  ];
+
   useEffect(() => {
     if (existingData?.data) {
       const ds = existingData.data;
       setName(ds.name);
       setType(ds.type);
       setStatus(ds.status);
+      setAgentId(ds.agent_id || '');
       const cfg = ds.connection_config || {};
       setHost(String(cfg.host || ''));
       setPort(String(cfg.port || ''));
@@ -89,6 +103,7 @@ export function DataSourceForm() {
     mutation.mutate({
       name: name.trim(),
       type,
+      agent_id: agentId || undefined,
       connection_config: connectionConfig,
       status,
     });
@@ -112,6 +127,7 @@ export function DataSourceForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Name" name="name" value={name} onChange={e => setName(e.target.value)} error={errors.name} required />
           <Select label="Type" name="type" value={type} onChange={e => setType(e.target.value as DataSourceType)} options={TYPE_OPTIONS} error={errors.type} required />
+          <Select label="Agent" name="agent_id" value={agentId} onChange={e => setAgentId(e.target.value)} options={agentOptions} />
           <Input label="Host" name="host" value={host} onChange={e => setHost(e.target.value)} />
           <Input label="Port" name="port" type="number" value={port} onChange={e => setPort(e.target.value)} />
           <Input label="Database" name="database" value={database} onChange={e => setDatabase(e.target.value)} />

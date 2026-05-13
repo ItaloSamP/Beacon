@@ -43,9 +43,9 @@ class TestCreateApiKey:
         assert "id" in data
         assert data["name"] == "My Connector"
         assert "prefix" in data, "API key response should include prefix"
-        assert data["prefix"] == "dhm_", f"Expected prefix 'dhm_', got '{data.get('prefix')}'"
+        assert data["prefix"] == "bcn_", f"Expected prefix 'bcn_', got '{data.get('prefix')}'"
         assert "key" in data, "API key response should include the full key (only on creation)"
-        assert data["key"].startswith("dhm_"), f"Key should start with 'dhm_', got '{data.get('key')}'"
+        assert data["key"].startswith("bcn_"), f"Key should start with 'bcn_', got '{data.get('key')}'"
         assert len(data["key"]) > 10, "API key should be reasonably long"
         assert "created_at" in data
         # expires_at may be null or a date string
@@ -304,7 +304,7 @@ class TestAuthenticateWithApiKey:
         """
         response = await async_client.get(
             "/api/v1/datasources",
-            headers={"X-API-Key": "dhm_fake_invalid_key_12345"},
+            headers={"X-API-Key": "bcn_fake_invalid_key_12345"},
         )
         assert response.status_code == 401, f"Expected 401 for invalid API key, got {response.status_code}"
 
@@ -351,7 +351,7 @@ class TestAuthenticateWithApiKey:
         """
         response = await async_client.get(
             "/api/v1/datasources",
-            headers={"X-API-Key": "not-dhm_prefix_key"},
+            headers={"X-API-Key": "not-bcn_prefix_key"},
         )
         assert response.status_code == 401
 

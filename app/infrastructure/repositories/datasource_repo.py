@@ -20,6 +20,7 @@ class DataSourceRepository:
         per_page: int = 50,
         type: str | None = None,
         status: str | None = None,
+        agent_id: UUID | None = None,
     ) -> tuple[list[DataSource], int]:
         query = select(DataSource)
         count_query = select(func.count(DataSource.id))
@@ -30,6 +31,9 @@ class DataSourceRepository:
         if status:
             query = query.where(DataSource.status == status)
             count_query = count_query.where(DataSource.status == status)
+        if agent_id is not None:
+            query = query.where(DataSource.agent_id == agent_id)
+            count_query = count_query.where(DataSource.agent_id == agent_id)
 
         total_result = await self.db.execute(count_query)
         total = total_result.scalar() or 0

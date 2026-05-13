@@ -6,7 +6,7 @@ export function Header() {
   const { user, logout } = useAuth();
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      <div><h2 className="text-lg font-semibold text-gray-800">Data Health Monitor</h2></div>
+      <div><h2 className="text-lg font-semibold text-gray-800">Beacon</h2></div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <User size={16} />

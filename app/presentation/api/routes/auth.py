@@ -11,7 +11,6 @@ from app.domain.schemas import (
     RefreshRequest,
     AuthResponse,
     RefreshResponse,
-    ApiResponse,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])

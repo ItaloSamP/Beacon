@@ -81,8 +81,8 @@ describe('LoginPage', () => {
     it('should render the app title or logo', () => {
       renderLoginPage();
 
-      // Should have some branding element
-      const heading = screen.getByRole('heading', { level: 1, name: /data health|monitor/i });
+      // Should have some branding element showing "Beacon"
+      const heading = screen.getByRole('heading', { level: 1, name: /beacon/i });
       expect(heading).toBeInTheDocument();
     });
 

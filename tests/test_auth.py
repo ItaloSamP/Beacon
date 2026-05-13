@@ -411,4 +411,3 @@ class TestProtectedRouteAccess:
 
 
 # Fix: pytest_asyncio_fixture should be pytest_asyncio.fixture
-import pytest_asyncio

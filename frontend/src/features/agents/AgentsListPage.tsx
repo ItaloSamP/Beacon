@@ -7,24 +7,24 @@ import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { api } from '../../lib/api';
-import type { DataSource } from '../../types/datasource';
+import type { Agent } from '../../types/agent';
 import type { PaginatedResponse } from '../../types/api';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
-export function DataSourcesListPage() {
+export function AgentsListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [deleteTarget, setDeleteTarget] = useState<DataSource | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['datasources'],
-    queryFn: () => api.get<PaginatedResponse<DataSource>>('/datasources'),
+    queryKey: ['agents'],
+    queryFn: () => api.get<PaginatedResponse<Agent>>('/agents'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/datasources/${id}`),
+    mutationFn: (id: string) => api.delete(`/agents/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['datasources'] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
       setDeleteTarget(null);
     },
   });
@@ -40,30 +40,30 @@ export function DataSourcesListPage() {
   if (isError) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-red-600">Failed to load data sources.</p>
-        <Button variant="secondary" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ['datasources'] })}>
+        <p className="text-red-600">Failed to load agents.</p>
+        <Button variant="secondary" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ['agents'] })}>
           Retry
         </Button>
       </Card>
     );
   }
 
-  const dataSources = data?.data ?? [];
+  const agents = data?.data ?? [];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Data Sources</h1>
-        <Button onClick={() => navigate('/datasources/new')}>
-          <Plus size={16} className="mr-2" /> Add DataSource
+        <h1 className="text-2xl font-bold">Agents</h1>
+        <Button onClick={() => navigate('/agents/new')}>
+          <Plus size={16} className="mr-2" /> New Agent
         </Button>
       </div>
 
-      {dataSources.length === 0 ? (
+      {agents.length === 0 ? (
         <Card className="p-12 text-center">
-          <p className="text-gray-500">No data sources found. Create your first one!</p>
-          <Button className="mt-4" onClick={() => navigate('/datasources/new')}>
-            <Plus size={16} className="mr-2" /> Add DataSource
+          <p className="text-gray-500">No agents found. Create your first agent!</p>
+          <Button className="mt-4" onClick={() => navigate('/agents/new')}>
+            <Plus size={16} className="mr-2" /> New Agent
           </Button>
         </Card>
       ) : (
@@ -72,30 +72,32 @@ export function DataSourcesListPage() {
             <thead>
               <tr className="border-b border-gray-200 text-left text-sm text-gray-500">
                 <th className="p-3">Name</th>
-                <th className="p-3">Type</th>
                 <th className="p-3">Status</th>
-                <th className="p-3">Agent</th>
+                <th className="p-3">Version</th>
+                <th className="p-3">Created At</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {dataSources.map(ds => (
-                <tr key={ds.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="p-3 font-medium">{ds.name}</td>
-                  <td className="p-3">{ds.type}</td>
+              {agents.map(agent => (
+                <tr key={agent.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="p-3 font-medium">{agent.name}</td>
                   <td className="p-3">
-                    <Badge variant={ds.status === 'active' ? 'success' : ds.status === 'error' ? 'danger' : 'warning'}>
-                      {ds.status}
+                    <Badge variant={agent.status === 'online' ? 'success' : 'warning'}>
+                      {agent.status}
                     </Badge>
                   </td>
-                  <td className="p-3 text-gray-500">{ds.agent?.name || '—'}</td>
+                  <td className="p-3 text-gray-500">{agent.version || '—'}</td>
+                  <td className="p-3 text-gray-500">
+                    {agent.created_at ? new Date(agent.created_at).toLocaleDateString() : '—'}
+                  </td>
                   <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/datasources/${ds.id}/edit`)} aria-label="Edit">
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/agents/${agent.id}/edit`)} aria-label="Edit">
                         <Pencil size={14} />
                         <span className="sr-only">Edit</span>
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(ds)} aria-label="Delete">
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(agent)} aria-label="Delete">
                         <Trash2 size={14} className="text-red-500" />
                         <span className="sr-only">Delete</span>
                       </Button>
@@ -111,7 +113,7 @@ export function DataSourcesListPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Delete Data Source"
+        title="Delete Agent"
         message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
