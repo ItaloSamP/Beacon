@@ -1,6 +1,6 @@
 # Project Context — Beacon
 
-> **Last Updated:** 2026-05-13T22:00:00Z | **Maintained By:** AI Agent Team
+> **Last Updated:** 2026-05-14T14:21:52Z | **Maintained By:** AI Agent Team
 > **Architecture:** Hybrid (Agent + Cloud Monolith)
 
 ---
@@ -560,6 +560,23 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 **Discovery:** All existing learnings in §10 comprehensively cover the patterns, pitfalls, and discoveries from this sprint. Code quality is high — clean architecture, proper error handling, comprehensive tests, zero security issues. No new patterns or issues were discovered that aren't already documented.
 **Solution:** N/A — PROJECT_CONTEXT.md §10 is already up-to-date with 19 learning entries. Rebranding verified complete (zero old "Data Health Monitor"/"dhm_" references in source code). All automated checks pass: Bandit 0 issues, Ruff 0 errors, tsc --noEmit 0 errors. Frontend 151/151 tests pass, backend unit 25/25 pass.
 **Source:** Sprint 0 — Code review (2026-05-13)
+
+#### 2026-05-14 — Testing: Nested test directories require updated relative paths
+**Context:** When moving test files from flat `tests/` into nested subdirectories (e.g., `tests/migrations/test_migrations.py`), any `Path(__file__).parent.parent` relative paths must be updated.
+**Discovery:** `test_migrations.py` used `Path(__file__).parent.parent` to resolve `alembic/versions/` from project root. After moving from `tests/test_migrations.py` to `tests/migrations/test_migrations.py`, `parent.parent` resolved to `tests/` instead of project root, causing `test_migration_file_exists` to fail with `AssertionError` (found 0 migration files in `tests/alembic/versions/`).
+**Solution:** Changed to `Path(__file__).parent.parent.parent` (3 levels up from `tests/migrations/` instead of 2 from `tests/`). Alternatively, use `Path(__file__).resolve().parents[2]` for clarity or use a project-root constant.
+**Source:** Issue — Test folder reorganization (2026-05-14)
+
+#### 2026-05-14 — Testing: pytest testpaths configuration works with nested directories
+**Context:** The `pyproject.toml` setting `testpaths = ["tests"]` correctly discovers tests in any subdirectory depth under `tests/`.
+**Discovery:** No changes needed to pytest configuration when reorganizing from flat `tests/test_*.py` to `tests/{application,migrations,presentation/routes}/test_*.py`. Pytest recursively discovers `test_*.py` files under `testpaths`. `conftest.py` at `tests/conftest.py` is discovered as a root-level conftest for all subdirectories.
+**Source:** Issue — Test folder reorganization (2026-05-14)
+
+#### 2026-05-14 — Testing: Test reorganization verification — all unit tests pass, discovery confirmed
+**Context:** After reorganizing tests from flat `tests/` to nested `tests/{application,migrations,presentation/routes}/`, a full verification was run to confirm test discovery and unit test execution.
+**Discovery:** `python -m pytest --co` collected exactly 180 tests (same as before reorganization). `python -m pytest tests/application/ tests/migrations/ -v` ran 35/35 unit tests passing (25 auth_service + 10 migrations). PostgreSQL was unavailable, so 145 integration tests could not run — this is the same known prerequisite documented in earlier entries. Coverage from the 35 unit tests was 62% (limited scope by design — integration-dependent modules like repositories, routes, middleware are not exercised).
+**Solution:** Nested directory reorganization is verified working. `testpaths = ["tests"]` correctly discovers all `test_*.py` recursively. The `Path(__file__).parent.parent.parent` fix in `test_migrations.py` correctly resolves to project root. No code changes needed — all tests pass identically to before the reorganization.
+**Source:** Test folder reorganization verification (2026-05-14)
 
 ---
 

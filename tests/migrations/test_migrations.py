@@ -28,7 +28,7 @@ class TestMigration002Agents:
         """
         Ensure the migration 002 file exists in alembic/versions/.
         """
-        migrations_dir = Path(__file__).parent.parent / "alembic" / "versions"
+        migrations_dir = Path(__file__).parent.parent.parent / "alembic" / "versions"
         migration_files = sorted(
             f for f in migrations_dir.glob("*.py")
             if f.name != "__init__.py"
@@ -46,7 +46,7 @@ class TestMigration002Agents:
         """
         002 migration must define upgrade() and downgrade() functions.
         """
-        migrations_dir = Path(__file__).parent.parent / "alembic" / "versions"
+        migrations_dir = Path(__file__).parent.parent.parent / "alembic" / "versions"
         agent_migrations = sorted(
             f for f in migrations_dir.glob("*add_agents*") if f.name.endswith(".py")
         )
@@ -67,7 +67,7 @@ class TestMigration002Agents:
         """
         Migration 002 upgrade() should reference 'agents' table creation.
         """
-        migrations_dir = Path(__file__).parent.parent / "alembic" / "versions"
+        migrations_dir = Path(__file__).parent.parent.parent / "alembic" / "versions"
         agent_migrations = sorted(
             f for f in migrations_dir.glob("*add_agents*") if f.name.endswith(".py")
         )
@@ -86,7 +86,7 @@ class TestMigration002Agents:
         """
         Migration 002 upgrade() should add agent_id column to data_sources.
         """
-        migrations_dir = Path(__file__).parent.parent / "alembic" / "versions"
+        migrations_dir = Path(__file__).parent.parent.parent / "alembic" / "versions"
         agent_migrations = sorted(
             f for f in migrations_dir.glob("*add_agents*") if f.name.endswith(".py")
         )
@@ -105,7 +105,7 @@ class TestMigration002Agents:
         """
         Migration 002 downgrade() should drop agents table.
         """
-        migrations_dir = Path(__file__).parent.parent / "alembic" / "versions"
+        migrations_dir = Path(__file__).parent.parent.parent / "alembic" / "versions"
         agent_migrations = sorted(
             f for f in migrations_dir.glob("*add_agents*") if f.name.endswith(".py")
         )

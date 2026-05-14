@@ -787,12 +787,15 @@ Shell
 
 ## Evidence (preenchido pelo tester em 2026-05-13T21:44:00Z)
 
-- **Test Log:** [`.opencode/work/logs/test-run-sprint-0-v4-20260513-214400.md`](./.opencode/work/logs/test-run-sprint-0-v4-20260513-214400.md)
+- **Test Log (v4):** [`.opencode/work/logs/test-run-sprint-0-v4-20260513-214400.md`](./.opencode/work/logs/test-run-sprint-0-v4-20260513-214400.md)
+- **Test Log (Test Reorg):** [`.opencode/work/logs/sprint-0/test-run-sprint-0-test-reorg-20260514-142152.md`](./.opencode/work/logs/sprint-0/test-run-sprint-0-test-reorg-20260514-142152.md)
 - **Coverage (Frontend):** [`.opencode/work/logs/coverage-sprint-0-v4-20260513-214400.md`](./.opencode/work/logs/coverage-sprint-0-v4-20260513-214400.md) — 74.24% overall, 95%+ feature code coverage (placeholder + type files drag average down)
-- **Coverage (Backend):** BLOCKED — `pytest --cov` requires asyncpg integration tests to pass (see Known Blocker below)
+- **Coverage (Backend Unit Tests):** [`.opencode/work/logs/sprint-0/coverage-sprint-0-test-reorg-20260514-142152.md`](./.opencode/work/logs/sprint-0/coverage-sprint-0-test-reorg-20260514-142152.md) — 62% overall (unit-only, 35 tests). 93%+ on tested modules (auth_service, models, schemas, security, config).
+- **Coverage (Backend Full):** BLOCKED — `pytest --cov` requires asyncpg integration tests to pass (see Known Blocker below)
 - **Frontend Tests:** ✅ 151/151 PASS (ALL GREEN, 8 test files, 9.23s)
-- **Backend Unit Tests:** ✅ 25/25 PASS (`test_auth_service.py`, 4.22s)
-- **Backend Integration Tests:** ⚠️ 1 PASS + 174 BLOCKED — pre-existing asyncpg/Windows `ProactorEventLoop` incompatibility. First test in each class passes; subsequent tests fail with `InterfaceError: cannot perform operation: another operation is in progress`. NOT caused by Sprint 0 changes.
+- **Backend Unit Tests:** ✅ 35/35 PASS (`test_auth_service.py` 25 + `test_migrations.py` 10, 3.57s) — verified after test folder reorganization
+- **Test Discovery:** ✅ 180 tests collected from nested directory structure (0.10s)
+- **Backend Integration Tests:** ⚠️ 145 collected but BLOCKED — PostgreSQL NOT available (`ConnectionRefusedError`). Known prerequisite documented in PROJECT_CONTEXT.md §10.
 - **Security Scan:** ✅ Bandit — zero issues (1377 lines scanned)
 - **Ruff Lint:** ✅ 0 errors
 - **Rebranding Grep:** ✅ Zero "Data Health Monitor", "dhm_", "DHM" in source
