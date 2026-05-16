@@ -655,3 +655,267 @@ class TestAgentUserIsolation:
             headers={"Authorization": f"Bearer {token_b}"},
         )
         assert response.status_code == 404
+
+
+class TestAgentTokenOnCreate:
+    """POST /api/v1/agents returns agent_token on creation.
+
+    RED PHASE: Tests WILL FAIL because agent_token field doesn't exist yet.
+    """
+
+    @pytest.mark.asyncio
+    async def test_create_agent_returns_token(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """POST /api/v1/agents should return agent_token in response."""
+        # RED PHASE
+        payload = {
+            "name": "Token-Receiving Agent",
+            "status": "online",
+            "version": "0.1.0",
+        }
+
+        response = await async_client.post(
+            "/api/v1/agents", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+
+        data = response.json()["data"]
+        assert "agent_token" in data, (
+            f"Create agent response should include agent_token, got keys: {list(data.keys())}"
+        )
+        assert isinstance(data["agent_token"], str)
+        assert len(data["agent_token"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_agent_token_has_correct_prefix(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """The agent_token should start with 'beacon_agent_'."""
+        # RED PHASE
+        payload = {
+            "name": "Prefix Check Agent",
+            "status": "online",
+            "version": "0.1.0",
+        }
+
+        response = await async_client.post(
+            "/api/v1/agents", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201
+
+        agent_token = response.json()["data"]["agent_token"]
+        assert agent_token.startswith("beacon_agent_"), (
+            f"agent_token should start with 'beacon_agent_', got: {agent_token[:30]}..."
+        )
+
+    @pytest.mark.asyncio
+    async def test_list_agents_does_not_include_token(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """GET /api/v1/agents should NOT include the agent_token."""
+        # RED PHASE
+        # Create an agent with a token
+        await async_client.post(
+            "/api/v1/agents",
+            json={"name": "List Tokenless Agent", "status": "online"},
+            headers=auth_headers,
+        )
+
+        response = await async_client.get(
+            "/api/v1/agents", headers=auth_headers
+        )
+        assert response.status_code == 200
+
+        for agent in response.json()["data"]:
+            assert "agent_token" not in agent, (
+                f"agent_token should not be exposed in list, but found for {agent['name']}"
+            )
+            assert "token" not in agent, (
+                f"token should not be exposed in list, but found for {agent['name']}"
+            )
+
+    @pytest.mark.asyncio
+    async def test_get_agent_does_not_include_token(
+        self, async_client: AsyncClient, auth_headers: dict, sample_agent: dict
+    ):
+        """GET /api/v1/agents/{id} should NOT include the agent_token."""
+        # RED PHASE
+        response = await async_client.get(
+            f"/api/v1/agents/{sample_agent['id']}", headers=auth_headers
+        )
+        assert response.status_code == 200
+
+        data = response.json()["data"]
+        assert "agent_token" not in data, (
+            "agent_token should not be exposed in GET detail"
+        )
+
+
+class TestAgentTokensCRUD:
+    """GET/DELETE /api/v1/agents/{id}/tokens endpoints.
+
+    RED PHASE: Tests WILL FAIL because token sub-endpoints don't exist yet.
+    """
+
+    @pytest.mark.asyncio
+    async def test_list_tokens_returns_prefix_only(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """GET /agents/{id}/tokens returns tokens with prefix only (no full token)."""
+        # RED PHASE
+        # Create a new agent to get a token
+        create_resp = await async_client.post(
+            "/api/v1/agents",
+            json={"name": "Token List Agent", "status": "online"},
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        agent_id = create_resp.json()["data"]["id"]
+
+        response = await async_client.get(
+            f"/api/v1/agents/{agent_id}/tokens", headers=auth_headers
+        )
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}: {response.json()}"
+        )
+
+        body = response.json()
+        assert "data" in body
+        assert isinstance(body["data"], list)
+
+        for token_info in body["data"]:
+            # Should have prefix but NOT full token
+            assert "id" in token_info
+            if "prefix" in token_info:
+                assert "beacon_agent_" in token_info["prefix"]
+            # Full token should not be exposed
+            assert "token" not in token_info, (
+                "Full token should not be exposed in list"
+            )
+            assert "key" not in token_info, (
+                "Full key should not be exposed in list"
+            )
+
+    @pytest.mark.asyncio
+    async def test_delete_token_revokes_it(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """DELETE /agents/{id}/tokens/{token_id} should revoke the token."""
+        # RED PHASE
+        create_resp = await async_client.post(
+            "/api/v1/agents",
+            json={"name": "Revoke Token Agent", "status": "online"},
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        agent_id = create_resp.json()["data"]["id"]
+
+        # Get token list to find token_id
+        list_resp = await async_client.get(
+            f"/api/v1/agents/{agent_id}/tokens", headers=auth_headers
+        )
+        assert list_resp.status_code == 200
+        tokens = list_resp.json()["data"]
+        assert len(tokens) > 0, "Should have at least one token"
+
+        token_id = tokens[0]["id"]
+
+        # Delete/revoke the token
+        delete_resp = await async_client.delete(
+            f"/api/v1/agents/{agent_id}/tokens/{token_id}",
+            headers=auth_headers,
+        )
+        assert delete_resp.status_code in (200, 204), (
+            f"Expected 200 or 204, got {delete_resp.status_code}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_revoked_token_cannot_auth(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """After revoking a token, it should not authenticate."""
+        # RED PHASE
+        # Create agent and get token
+        create_resp = await async_client.post(
+            "/api/v1/agents",
+            json={"name": "Auth Revoke Test", "status": "online"},
+            headers=auth_headers,
+        )
+        assert create_resp.status_code == 201
+        data = create_resp.json()["data"]
+        agent_id = data["id"]
+        agent_token_value = data.get("agent_token")
+
+        if not agent_token_value:
+            pytest.skip("agent_token not returned on create, cannot test revocation")
+
+        agent_token_headers = {"Authorization": f"Bearer {agent_token_value}"}
+
+        # Verify token works (agent self config)
+        config_resp = await async_client.get(
+            "/api/v1/agent/self/config", headers=agent_token_headers
+        )
+        assert config_resp.status_code == 200, (
+            f"Token should work before revocation, got {config_resp.status_code}"
+        )
+
+        # Get token list
+        list_resp = await async_client.get(
+            f"/api/v1/agents/{agent_id}/tokens", headers=auth_headers
+        )
+        assert list_resp.status_code == 200
+        tokens = list_resp.json()["data"]
+        assert len(tokens) > 0
+
+        token_id = tokens[0]["id"]
+
+        # Revoke
+        await async_client.delete(
+            f"/api/v1/agents/{agent_id}/tokens/{token_id}",
+            headers=auth_headers,
+        )
+
+        # Token should no longer work
+        revoked_resp = await async_client.get(
+            "/api/v1/agent/self/config", headers=agent_token_headers
+        )
+        assert revoked_resp.status_code == 401, (
+            f"Revoked token should return 401, got {revoked_resp.status_code}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_list_tokens_requires_auth(
+        self, async_client: AsyncClient, sample_agent: dict
+    ):
+        """GET /agents/{id}/tokens without auth returns 401."""
+        # RED PHASE
+        response = await async_client.get(
+            f"/api/v1/agents/{sample_agent['id']}/tokens"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_delete_token_requires_auth(
+        self, async_client: AsyncClient, sample_agent: dict
+    ):
+        """DELETE /agents/{id}/tokens/{id} without auth returns 401."""
+        # RED PHASE
+        response = await async_client.delete(
+            f"/api/v1/agents/{sample_agent['id']}/tokens/"
+            f"00000000-0000-0000-0000-000000000000"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_delete_nonexistent_token_returns_404(
+        self, async_client: AsyncClient, auth_headers: dict, sample_agent: dict
+    ):
+        """DELETE with nonexistent token_id returns 404."""
+        # RED PHASE
+        response = await async_client.delete(
+            f"/api/v1/agents/{sample_agent['id']}/tokens/"
+            f"00000000-0000-0000-0000-000000000000",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404

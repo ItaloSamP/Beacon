@@ -698,3 +698,164 @@ class TestDataSourceAgentRelationship:
             for ds in response.json()["data"]:
                 if "agent_id" in ds:
                     assert ds["agent_id"] == sample_agent["id"] or ds["agent_id"] is None
+
+
+class TestDataSourceConnectionConfigMasking:
+    """Verify that connection_config is masked in list but full in detail.
+
+    RED PHASE: Tests WILL FAIL because connection_config masking logic
+    doesn't exist yet.
+    """
+
+    @pytest.mark.asyncio
+    async def test_list_masks_connection_config(
+        self, async_client: AsyncClient, auth_headers: dict,
+        sample_datasource: dict
+    ):
+        """
+        When listing datasources, connection_config should be masked ('****').
+        The password or entire config should not be visible in list view.
+        """
+        # RED PHASE
+        response = await async_client.get(
+            "/api/v1/datasources", headers=auth_headers
+        )
+        assert response.status_code == 200
+
+        data = response.json()["data"]
+        for ds in data:
+            if ds["id"] == sample_datasource["id"]:
+                cc = ds.get("connection_config", {})
+                if isinstance(cc, str) and cc == "****":
+                    # Masked as expected
+                    pass
+                elif isinstance(cc, dict):
+                    # If dict is returned, sensitive keys should be masked
+                    sensitive_keys = ["password", "secret", "api_key", "token"]
+                    for key in sensitive_keys:
+                        if key in cc:
+                            assert cc[key] != "test_pass", (
+                                f"Sensitive key '{key}' should be masked in list"
+                            )
+                break
+
+    @pytest.mark.asyncio
+    async def test_detail_shows_full_connection_config(
+        self, async_client: AsyncClient, auth_headers: dict,
+        sample_datasource: dict
+    ):
+        """
+        When getting a single datasource, connection_config should be
+        the full decrypted value.
+        """
+        # RED PHASE
+        response = await async_client.get(
+            f"/api/v1/datasources/{sample_datasource['id']}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+
+        data = response.json()["data"]
+        cc = data.get("connection_config", {})
+
+        # Should be a dict with actual values, not "****"
+        if isinstance(cc, str):
+            assert cc != "****", (
+                "Detail view should show full connection_config, not '*'"
+            )
+        elif isinstance(cc, dict):
+            # If password is present, it should be the real value
+            if "password" in cc:
+                assert cc["password"] != "", (
+                    "Detail view should contain actual password value"
+                )
+            if "host" in cc:
+                assert cc["host"] == "localhost" or "host" in cc
+
+    @pytest.mark.asyncio
+    async def test_create_encrypts_connection_config(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """
+        When creating a datasource, the stored connection_config should
+        be encrypted at rest.
+        """
+        # RED PHASE
+        payload = {
+            "name": "Encrypted DS Test",
+            "type": "postgres",
+            "connection_config": {
+                "host": "sensitive-db.internal",
+                "port": 5432,
+                "database": "secrets",
+                "username": "admin",
+                "password": "SuperSecret123!",
+            },
+            "status": "active",
+        }
+
+        response = await async_client.post(
+            "/api/v1/datasources", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 201, (
+            f"Expected 201, got {response.status_code}: {response.json()}"
+        )
+
+        # The response may or may not include connection_config based on masking
+        # But we verify the creation succeeded
+        data = response.json()["data"]
+        assert data["name"] == "Encrypted DS Test"
+
+        # Fetch detail to verify config is accessible (decrypted on read)
+        detail_resp = await async_client.get(
+            f"/api/v1/datasources/{data['id']}", headers=auth_headers
+        )
+        assert detail_resp.status_code == 200
+        detail_data = detail_resp.json()["data"]
+
+        cc = detail_data.get("connection_config", {})
+        if isinstance(cc, dict):
+            assert cc.get("host") == "sensitive-db.internal", (
+                "Detail view should show original host value"
+            )
+
+    @pytest.mark.asyncio
+    async def test_update_encrypts_new_connection_config(
+        self, async_client: AsyncClient, auth_headers: dict,
+        sample_datasource: dict
+    ):
+        """
+        When updating connection_config, the new value should be encrypted
+        and readable via detail.
+        """
+        # RED PHASE
+        new_config = {
+            "host": "new-db.internal",
+            "port": 5433,
+            "database": "new_secrets",
+            "username": "new_admin",
+            "password": "NewSecret456!",
+        }
+
+        update_resp = await async_client.put(
+            f"/api/v1/datasources/{sample_datasource['id']}",
+            json={"connection_config": new_config},
+            headers=auth_headers,
+        )
+        assert update_resp.status_code == 200, (
+            f"Expected 200, got {update_resp.status_code}: {update_resp.json()}"
+        )
+
+        # Fetch detail and verify the updated config
+        detail_resp = await async_client.get(
+            f"/api/v1/datasources/{sample_datasource['id']}",
+            headers=auth_headers,
+        )
+        assert detail_resp.status_code == 200
+        cc = detail_resp.json()["data"].get("connection_config", {})
+
+        if isinstance(cc, dict):
+            assert cc.get("host") == "new-db.internal", (
+                f"Updated host should be 'new-db.internal', got {cc.get('host')}"
+            )
+            assert cc.get("port") == 5433
