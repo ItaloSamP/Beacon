@@ -36,20 +36,20 @@ echo $BRANCH | grep -oE '[0-9]+' | head -1
 
 #### Test Logs
 ```bash
-# Find latest test log for this issue
-ls -t .opencode/work/logs/test-run-*.md | head -1
+# Find test log for this issue
+ls .opencode/work/logs/test-run-*.md
 ```
 
 #### Coverage Report
 ```bash
-# Find latest coverage report
-ls -t .opencode/work/logs/coverage-*.md | head -1
+# Find coverage report
+ls .opencode/work/logs/coverage-*.md
 ```
 
 #### Security Scan
 ```bash
-# Find latest security scan
-ls -t .opencode/work/logs/security-*.md | head -1
+# Find security scan
+ls .opencode/work/logs/security-*.md
 ```
 
 ### Step 3: Generate PR Description
@@ -127,7 +127,7 @@ Feature
 - [ ] E2E tests (not applicable)
 
 ### Test Results
-- **Test Log:** See .opencode/work/logs/test-run-42-20240315.md
+- **Test Log:** See .opencode/work/logs/test-run-42.md
 - **Coverage:** 87% (threshold: 80%) ✓
 - **All tests passing:** Yes ✓
 
@@ -211,7 +211,7 @@ Apply appropriate labels:
 **Labels:** feature, needs-review
 
 **Attachments:**
-- Test Log: .opencode/work/logs/test-run-42-20240315.md
+- Test Log: .opencode/work/logs/test-run-42.md
 - Coverage: 87%
 - Security: Passed
 

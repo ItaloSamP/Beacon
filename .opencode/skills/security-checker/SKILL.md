@@ -140,7 +140,7 @@ fs.readFile(path.join('/uploads', filename));
 
 ### Step 3: Generate Report
 
-Save to `.opencode/work/logs/security-<issue-num>-<timestamp>.md`:
+Save to `.opencode/work/logs/security-<issue-num>.md`:
 
 ```markdown
 # Security Scan Report
@@ -272,7 +272,7 @@ app.post('/login', loginLimiter, loginHandler);
 1. Add rate limiting to login endpoint
 2. Update lodash to 4.17.21
 
-**Report:** .opencode/work/logs/security-42-20240315.md
+**Report:** .opencode/work/logs/security-42.md
 
 Gate Status: BLOCKED until high finding resolved
 ```
