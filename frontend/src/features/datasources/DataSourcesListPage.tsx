@@ -73,6 +73,7 @@ export function DataSourcesListPage() {
               <tr className="border-b border-gray-200 text-left text-sm text-gray-500">
                 <th className="p-3">Name</th>
                 <th className="p-3">Type</th>
+                <th className="p-3">Health</th>
                 <th className="p-3">Status</th>
                 <th className="p-3">Agent</th>
                 <th className="p-3 text-right">Actions</th>
@@ -83,6 +84,14 @@ export function DataSourcesListPage() {
                 <tr key={ds.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="p-3 font-medium">{ds.name}</td>
                   <td className="p-3">{ds.type}</td>
+                  <td className="p-3">
+                    <span
+                      className={`inline-block w-3 h-3 rounded-full ${
+                        ds.status === 'active' ? 'bg-green-500' : ds.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                      }`}
+                      title={ds.status}
+                    />
+                  </td>
                   <td className="p-3">
                     <Badge variant={ds.status === 'active' ? 'success' : ds.status === 'error' ? 'danger' : 'warning'}>
                       {ds.status}
