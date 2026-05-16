@@ -36,3 +36,12 @@ def generate_api_key() -> tuple[str, str]:
     full_key = f"{settings.API_KEY_PREFIX}{raw}"
     key_hash = hashlib.sha256(full_key.encode()).hexdigest()
     return full_key, key_hash
+
+
+def generate_agent_token() -> tuple[str, str, str]:
+    """Returns (full_token, token_hash, token_prefix)."""
+    raw = secrets.token_urlsafe(36)  # 48 chars base64
+    full_token = f"{settings.AGENT_TOKEN_PREFIX}{raw}"
+    token_hash = hashlib.sha256(full_token.encode()).hexdigest()
+    token_prefix = full_token[:20]  # First 20 chars including prefix
+    return full_token, token_hash, token_prefix
