@@ -187,8 +187,8 @@ describe('DataSourcesListPage', () => {
       renderListPage();
 
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/error|erro|failed|falha/i);
-        expect(errorMessage).toBeInTheDocument();
+        const errorMessages = screen.queryAllByText(/error|erro|failed|falha/i);
+        expect(errorMessages.length).toBeGreaterThan(0);
       });
     });
   });
