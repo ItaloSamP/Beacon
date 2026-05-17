@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "beacon-agent"
 version = "0.1.0"
@@ -14,3 +18,9 @@ dependencies = [
 
 [project.scripts]
 beacon-agent = "agent.cli:main"
+
+[tool.setuptools]
+packages = ["agent", "agent.connectors", "agent.profiling"]
+
+[tool.setuptools.package-dir]
+"agent" = "."
