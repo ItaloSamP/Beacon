@@ -17,26 +17,45 @@ from app.domain.schemas import (
 router = APIRouter(prefix="/datasources", tags=["datasources"])
 
 
-def _serialize_datasource(ds) -> dict:
+def _serialize_datasource(ds, mask_config: bool = False) -> dict:
     result = {
         "id": str(ds.id),
         "name": ds.name,
         "type": ds.type.value if hasattr(ds.type, "value") else str(ds.type),
         "agent_id": str(ds.agent_id) if ds.agent_id else None,
-        "connection_config": ds.connection_config or {},
+        "connection_config": _handle_config(ds.connection_config, mask_config),
         "status": ds.status.value if hasattr(ds.status, "value") else str(ds.status),
         "created_at": ds.created_at.isoformat() if ds.created_at else None,
         "updated_at": ds.updated_at.isoformat() if ds.updated_at else None,
     }
 
-    # Include agent summary if linked
-    if ds.agent_id and hasattr(ds, "agent") and ds.agent:
-        result["agent"] = {
-            "id": str(ds.agent.id),
-            "name": ds.agent.name,
-            "status": ds.agent.status.value if hasattr(ds.agent.status, "value") else str(ds.agent.status),
-        }
+    # Include agent summary if linked AND loaded (avoid MissingGreenlet on lazy-load)
+    if ds.agent_id:
+        try:
+            agent = ds.agent
+            if agent is not None:
+                result["agent"] = {
+                    "id": str(agent.id),
+                    "name": agent.name,
+                    "status": agent.status.value if hasattr(agent.status, "value") else str(agent.status),
+                }
+        except Exception:
+            pass
     return result
+
+
+def _handle_config(config, mask: bool) -> dict | str:
+    """Handle connection_config based on mask flag."""
+    if mask:
+        return "****"
+    if isinstance(config, dict) and "_encrypted" in config and len(config) == 1:
+        # Try to decrypt
+        from app.application.datasource_service import DataSourceService
+        from app.infrastructure.repositories.datasource_repo import DataSourceRepository
+        # We can't instantiate a service here without a db, so just return as-is
+        # The service layer handles decryption on get_by_id
+        return config
+    return config or {}
 
 
 @router.get("")
@@ -52,7 +71,7 @@ async def list_datasources(
     service = DataSourceService(DataSourceRepository(db))
     items, total = await service.list(page=page, per_page=per_page, type=type, status=status, agent_id=agent_id)
 
-    data_list = [_serialize_datasource(ds) for ds in items]
+    data_list = [_serialize_datasource(ds, mask_config=True) for ds in items]
 
     return PaginatedApiResponse(
         data=data_list,
@@ -71,7 +90,7 @@ async def get_datasource(
     ds = await service.get_by_id(id)
 
     return ApiResponse(
-        data=_serialize_datasource(ds),
+        data=_serialize_datasource(ds, mask_config=False),
         error=None,
     )
 
@@ -93,7 +112,7 @@ async def create_datasource(
     }, user_id=user_id)
 
     return ApiResponse(
-        data=_serialize_datasource(ds),
+        data=_serialize_datasource(ds, mask_config=True),
         error=None,
     )
 
@@ -122,7 +141,7 @@ async def update_datasource(
     ds = await service.update(id, update_data, user_id=user_id)
 
     return ApiResponse(
-        data=_serialize_datasource(ds),
+        data=_serialize_datasource(ds, mask_config=True),
         error=None,
     )
 

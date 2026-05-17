@@ -206,6 +206,49 @@ async def sample_pipeline(async_client: AsyncClient, auth_headers: dict, sample_
 
 
 # ============================================================
+# Agent token fixture (for agent-authenticated endpoints)
+# ============================================================
+
+@pytest_asyncio.fixture(scope="function")
+async def agent_token(async_client: AsyncClient, auth_headers: dict) -> dict:
+    """
+    Create an Agent with a token and return agent token auth headers.
+
+    Returns a dict with:
+      - 'headers': Authorization header using agent token
+      - 'agent_id': the agent's UUID
+      - 'token': the full token string
+      - 'token_prefix': the first 20 chars of the token
+
+    The agent is created via the API, which auto-generates a token
+    on creation. The full token is available in the response.
+    """
+    payload = {
+        "name": "Test Agent (Token)",
+        "status": "online",
+        "version": "0.1.0",
+    }
+
+    response = await async_client.post(
+        "/api/v1/agents", json=payload, headers=auth_headers
+    )
+    assert response.status_code == 201, (
+        f"Failed to create agent for token: {response.json()}"
+    )
+
+    data = response.json()["data"]
+    agent_id = data["id"]
+    full_token = data["agent_token"]
+
+    return {
+        "headers": {"Authorization": f"Bearer {full_token}"},
+        "agent_id": agent_id,
+        "token": full_token,
+        "token_prefix": full_token[:20] if full_token else "",
+    }
+
+
+# ============================================================
 # Utility helpers for tests
 # ============================================================
 

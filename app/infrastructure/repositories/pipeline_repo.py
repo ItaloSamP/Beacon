@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,5 +65,5 @@ class PipelineRepository:
         return pipeline
 
     async def delete(self, pipeline: Pipeline) -> None:
-        await self.db.delete(pipeline)
+        self.db.delete(pipeline)
         await self.db.flush()

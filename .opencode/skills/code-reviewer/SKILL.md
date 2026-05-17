@@ -68,8 +68,8 @@ Verify:
 ### Step 4: Verify Test Evidence
 Check test logs exist and show passing:
 ```bash
-ls -la .opencode/work/logs/test-run-<num>-*.md
-ls -la .opencode/work/logs/coverage-<num>-*.md
+ls -la .opencode/work/logs/test-run-<num>.md
+ls -la .opencode/work/logs/coverage-<num>.md
 ```
 
 Verify:
@@ -204,9 +204,9 @@ When approved, update the unified task file:
 ## Status: READY_TO_COMMIT
 
 ## Evidence (filled by tester/reviewer)
-- **Test Log:** .opencode/work/logs/test-run-<id>-<timestamp>.md
-- **Coverage:** .opencode/work/logs/coverage-<id>-<timestamp>.md
-- **Security Scan:** .opencode/work/logs/security-<id>-<timestamp>.md
+- **Test Log:** .opencode/work/logs/test-run-<id>.md
+- **Coverage:** .opencode/work/logs/coverage-<id>.md
+- **Security Scan:** .opencode/work/logs/security-<id>.md
 - **Review Verdict:** APPROVED
 - **Reviewed by:** @reviewer
 - **Date:** <timestamp>

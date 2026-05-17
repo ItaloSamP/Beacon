@@ -487,8 +487,16 @@ export const agentHandlers = [
 
     mockAgents.push(newAgent);
 
+    const generatedToken =
+      'beacon_agent_' +
+      Array.from({ length: 48 }, () =>
+        'abcdefghijklmnopqrstuvwxyz0123456789'[
+          Math.floor(Math.random() * 36)
+        ]
+      ).join('');
+
     return HttpResponse.json(
-      { data: newAgent, error: null },
+      { data: { ...newAgent, agent_token: generatedToken }, error: null },
       { status: 201 }
     );
   }),
@@ -607,6 +615,415 @@ export const apiKeyHandlers = [
 ];
 
 // ============================================================
+// Anomaly handlers
+// ============================================================
+
+let mockAnomalies: Array<{
+  id: string;
+  pipeline_run_id: string;
+  severity: string;
+  type: string;
+  description: string;
+  deviation_details: Record<string, unknown>;
+  detected_at: string;
+  resolved_at: string | null;
+}> = [
+  {
+    id: 'anomaly-uuid-001',
+    pipeline_run_id: 'prun-uuid-001',
+    severity: 'high',
+    type: 'volume',
+    description: 'Row count for public.orders decreased by 45%',
+    deviation_details: {
+      table: 'public.orders',
+      metric: 'row_count',
+      baseline_mean: 15200,
+      baseline_stddev: 200,
+      current_value: 8360,
+      z_score: -4.2,
+      threshold: 3.0,
+    },
+    detected_at: '2026-05-14T10:05:00Z',
+    resolved_at: null,
+  },
+  {
+    id: 'anomaly-uuid-002',
+    pipeline_run_id: 'prun-uuid-001',
+    severity: 'medium',
+    type: 'null_check',
+    description: 'Null percentage for public.users.email increased to 12%',
+    deviation_details: {
+      table: 'public.users',
+      column: 'email',
+      baseline_mean: 0.02,
+      baseline_stddev: 0.01,
+      current_value: 0.12,
+      z_score: 3.5,
+      threshold: 3.0,
+    },
+    detected_at: '2026-05-14T10:05:00Z',
+    resolved_at: null,
+  },
+  {
+    id: 'anomaly-uuid-003',
+    pipeline_run_id: 'prun-uuid-002',
+    severity: 'low',
+    type: 'volume',
+    description: 'Row count for public.products increased by 15%',
+    deviation_details: {
+      table: 'public.products',
+      metric: 'row_count',
+      baseline_mean: 5000,
+      baseline_stddev: 500,
+      current_value: 5750,
+      z_score: 1.5,
+      threshold: 3.0,
+    },
+    detected_at: '2026-05-13T10:05:00Z',
+    resolved_at: '2026-05-14T08:00:00Z',
+  },
+];
+
+export const anomalyHandlers = [
+  // GET /api/v1/anomalies/recent — must be before :id route
+  http.get(`${API_BASE}/anomalies/recent`, ({ request }) => {
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const recent = [...mockAnomalies]
+      .sort(
+        (a, b) =>
+          new Date(b.detected_at).getTime() -
+          new Date(a.detected_at).getTime()
+      )
+      .slice(0, limit);
+
+    return HttpResponse.json(
+      { data: recent, meta: { total: recent.length, limit }, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // GET /api/v1/anomalies — list with filtering
+  http.get(`${API_BASE}/anomalies`, ({ request }) => {
+    const url = new URL(request.url);
+    const severity = url.searchParams.get('severity');
+    const type = url.searchParams.get('type');
+    const resolved = url.searchParams.get('resolved');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const perPage = parseInt(url.searchParams.get('per_page') || '50');
+
+    let filtered = [...mockAnomalies];
+
+    if (severity) {
+      filtered = filtered.filter((a) => a.severity === severity);
+    }
+    if (type) {
+      filtered = filtered.filter((a) => a.type === type);
+    }
+    if (resolved !== null && resolved !== undefined && resolved !== '') {
+      const isResolved = resolved === 'true';
+      filtered = filtered.filter((a) => (a.resolved_at !== null) === isResolved);
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * perPage;
+    const pageData = filtered.slice(start, start + perPage);
+
+    return HttpResponse.json(
+      {
+        data: pageData,
+        meta: { page, per_page: perPage, total },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // GET /api/v1/anomalies/:id — detail with nested pipeline_run and alerts
+  http.get(`${API_BASE}/anomalies/:id`, ({ params }) => {
+    const { id } = params;
+    const anomaly = mockAnomalies.find((a) => a.id === id);
+
+    if (!anomaly) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Anomaly not found' },
+        { status: 404 }
+      );
+    }
+
+    const detail = {
+      ...anomaly,
+      pipeline_run: {
+        id: anomaly.pipeline_run_id,
+        pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
+        data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+        status: 'success',
+        started_at: '2026-05-14T10:00:00Z',
+        finished_at: '2026-05-14T10:00:05Z',
+      },
+      alerts: [
+        {
+          id: 'alert-uuid-001',
+          channel: 'email',
+          status: 'sent',
+          sent_at: '2026-05-14T10:05:30Z',
+        },
+        {
+          id: 'alert-uuid-002',
+          channel: 'slack',
+          status: 'pending',
+          sent_at: null,
+        },
+      ],
+    };
+
+    return HttpResponse.json(
+      { data: detail, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // POST /api/v1/anomalies — create new anomaly
+  http.post(`${API_BASE}/anomalies`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, string>;
+
+    if (!body.pipeline_run_id || !body.type || !body.severity) {
+      return HttpResponse.json(
+        {
+          data: null,
+          error: 'validation_error',
+          message: 'pipeline_run_id, type, and severity are required',
+        },
+        { status: 422 }
+      );
+    }
+
+    const newAnomaly = {
+      id: `anomaly-uuid-${Date.now()}`,
+      pipeline_run_id: body.pipeline_run_id,
+      severity: body.severity,
+      type: body.type,
+      description: body.description || '',
+      deviation_details: (body.deviation_details as Record<string, unknown>) || {},
+      detected_at: new Date().toISOString(),
+      resolved_at: null,
+    };
+
+    mockAnomalies.push(newAnomaly);
+
+    return HttpResponse.json(
+      { data: newAnomaly, error: null },
+      { status: 201 }
+    );
+  }),
+
+  // POST /api/v1/anomalies/:id/resolve — resolve an anomaly (idempotent)
+  http.post(`${API_BASE}/anomalies/:id/resolve`, ({ params }) => {
+    const { id } = params;
+    const index = mockAnomalies.findIndex((a) => a.id === id);
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Anomaly not found' },
+        { status: 404 }
+      );
+    }
+
+    mockAnomalies[index] = {
+      ...mockAnomalies[index],
+      resolved_at: new Date().toISOString(),
+    };
+
+    return HttpResponse.json(
+      { data: mockAnomalies[index], error: null },
+      { status: 200 }
+    );
+  }),
+];
+
+// ============================================================
+// Pipeline Run handlers
+// ============================================================
+
+let mockPipelineRuns: Array<{
+  id: string;
+  pipeline_id: string;
+  pipeline: { id: string; name: string; type: string };
+  status: string;
+  metrics_json: Record<string, unknown>;
+  started_at: string;
+  finished_at: string | null;
+}> = [
+  {
+    id: 'prun-uuid-001',
+    pipeline_id: 'pipe-uuid-001',
+    pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check', type: 'volume' },
+    status: 'success',
+    metrics_json: { row_count: 15420, previous_count: 15200, delta_pct: 1.45 },
+    started_at: '2026-05-14T10:00:00Z',
+    finished_at: '2026-05-14T10:00:05Z',
+  },
+  {
+    id: 'prun-uuid-002',
+    pipeline_id: 'pipe-uuid-001',
+    pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check', type: 'volume' },
+    status: 'warning',
+    metrics_json: { row_count: 13800, previous_count: 15200, delta_pct: -9.21 },
+    started_at: '2026-05-13T10:00:00Z',
+    finished_at: '2026-05-13T10:00:03Z',
+  },
+];
+
+export const pipelineRunHandlers = [
+  // POST /api/v1/pipelines/:pipelineId/run — trigger pipeline run
+  http.post(`${API_BASE}/pipelines/:pipelineId/run`, ({ params }) => {
+    const { pipelineId } = params;
+    const runId = `prun-uuid-${Date.now()}`;
+
+    const run = {
+      id: runId,
+      pipeline_id: pipelineId,
+      pipeline: { id: pipelineId, name: 'Daily Volume Check', type: 'volume' },
+      status: 'started',
+      metrics_json: {},
+      started_at: new Date().toISOString(),
+      finished_at: null,
+    };
+
+    mockPipelineRuns.push(run);
+
+    return HttpResponse.json(
+      {
+        data: {
+          run_id: runId,
+          pipeline_id: pipelineId,
+          status: 'started',
+          message: 'Pipeline run triggered successfully',
+        },
+        error: null,
+      },
+      { status: 202 }
+    );
+  }),
+
+  // GET /api/v1/pipeline-runs/recent — must be before :id route
+  http.get(`${API_BASE}/pipeline-runs/recent`, ({ request }) => {
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const recent = [...mockPipelineRuns]
+      .sort(
+        (a, b) =>
+          new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+      )
+      .slice(0, limit);
+
+    return HttpResponse.json(
+      { data: recent, meta: { total: recent.length, limit }, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // GET /api/v1/pipeline-runs/:id — single run detail
+  http.get(`${API_BASE}/pipeline-runs/:id`, ({ params }) => {
+    const { id } = params;
+    const run = mockPipelineRuns.find((r) => r.id === id);
+
+    if (!run) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Pipeline run not found' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json(
+      { data: run, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // GET /api/v1/pipelines/:pipelineId/runs — list runs for a specific pipeline
+  http.get(`${API_BASE}/pipelines/:pipelineId/runs`, ({ request, params }) => {
+    const { pipelineId } = params;
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const perPage = parseInt(url.searchParams.get('per_page') || '50');
+
+    let filtered = mockPipelineRuns.filter(
+      (r) => r.pipeline_id === pipelineId
+    );
+
+    const total = filtered.length;
+    const start = (page - 1) * perPage;
+    const pageData = filtered.slice(start, start + perPage);
+
+    return HttpResponse.json(
+      {
+        data: pageData,
+        meta: { page, per_page: perPage, total },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
+];
+
+// ============================================================
+// Agent Token handlers
+// ============================================================
+
+let mockAgentTokens: Array<{
+  id: string;
+  agent_id: string;
+  token_prefix: string;
+  name: string;
+  last_used_at: string | null;
+  created_at: string;
+}> = [
+  {
+    id: 'token-uuid-001',
+    agent_id: 'agent-uuid-001',
+    token_prefix: 'beacon_agent_a1b2',
+    name: 'Default',
+    last_used_at: '2026-05-14T10:05:00Z',
+    created_at: '2026-05-14T10:00:00Z',
+  },
+];
+
+export const agentTokenHandlers = [
+  // GET /api/v1/agents/:agentId/tokens
+  http.get(`${API_BASE}/agents/:agentId/tokens`, ({ params }) => {
+    const { agentId } = params;
+    const tokens = mockAgentTokens.filter((t) => t.agent_id === agentId);
+
+    return HttpResponse.json(
+      { data: tokens, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // DELETE /api/v1/agents/:agentId/tokens/:tokenId
+  http.delete(
+    `${API_BASE}/agents/:agentId/tokens/:tokenId`,
+    ({ params }) => {
+      const { agentId, tokenId } = params;
+      const index = mockAgentTokens.findIndex(
+        (t) => t.id === tokenId && t.agent_id === agentId
+      );
+
+      if (index === -1) {
+        return HttpResponse.json(
+          { data: null, error: 'not_found', message: 'Token not found' },
+          { status: 404 }
+        );
+      }
+
+      mockAgentTokens.splice(index, 1);
+      return new HttpResponse(null, { status: 204 });
+    }
+  ),
+];
+
+// ============================================================
 // Combine all handlers
 // ============================================================
 
@@ -617,4 +1034,7 @@ export const handlers = [
   ...pipelineHandlers,
   ...agentHandlers,
   ...apiKeyHandlers,
+  ...anomalyHandlers,
+  ...pipelineRunHandlers,
+  ...agentTokenHandlers,
 ];

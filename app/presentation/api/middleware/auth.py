@@ -46,4 +46,16 @@ async def require_auth(request: Request, db: AsyncSession = Depends(get_db)) -> 
         payload = decode_token(token)
         return {"user_id": payload["sub"]}
     except Exception:
+        # Try agent token
+        if token.startswith(settings.AGENT_TOKEN_PREFIX):
+            from app.infrastructure.repositories.agent_token_repo import AgentTokenRepository
+            token_hash = hashlib.sha256(token.encode()).hexdigest()
+            repo = AgentTokenRepository(db)
+            agent_token_obj = await repo.get_by_token_hash(token_hash)
+            if agent_token_obj and agent_token_obj.agent:
+                return {
+                    "agent_id": str(agent_token_obj.agent_id),
+                    "user_id": str(agent_token_obj.agent.user_id),
+                    "auth_method": "agent_token",
+                }
         raise UnauthorizedException("Invalid or expired token")

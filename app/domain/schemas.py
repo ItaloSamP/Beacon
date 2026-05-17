@@ -235,3 +235,83 @@ class AgentResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class AgentTokenResponse(BaseModel):
+    id: str
+    token_prefix: str
+    name: str
+    last_used_at: Optional[datetime] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AnomalyCreate(BaseModel):
+    pipeline_run_id: str
+    type: str
+    severity: str
+    description: Optional[str] = None
+    deviation_details: Optional[dict] = None
+
+
+class AnomalyResponse(BaseModel):
+    id: str
+    pipeline_run_id: str
+    severity: str
+    type: str
+    description: Optional[str] = None
+    deviation_details: Optional[dict] = None
+    detected_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PipelineRunTriggerResponse(BaseModel):
+    run_id: str
+    pipeline_id: str
+    status: str
+    message: str = "Pipeline execution started"
+
+
+class PipelineRunResponse(BaseModel):
+    id: str
+    pipeline_id: str
+    pipeline: Optional[PipelineResponse] = None
+    status: str
+    metrics_json: Optional[dict] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PipelineRunListResponse(PaginatedApiResponse):
+    data: list[PipelineRunResponse]
+
+
+class AlertResponse(BaseModel):
+    id: str
+    anomaly_id: str
+    channel: str
+    sent_at: Optional[datetime] = None
+    status: str
+    error_message: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class AlertCreate(BaseModel):
+    anomaly_id: str
+    channel: str = "email"
+
+
+class AlertRuleResponse(BaseModel):
+    id: str
+    pipeline_id: str
+    condition: str
+    channels: Optional[list] = None
+    enabled: bool = True
+
+    model_config = {"from_attributes": True}

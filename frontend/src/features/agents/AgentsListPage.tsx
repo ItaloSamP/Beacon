@@ -27,6 +27,10 @@ export function AgentsListPage() {
       queryClient.invalidateQueries({ queryKey: ['agents'] });
       setDeleteTarget(null);
     },
+    onError: (err: Error) => {
+      console.error('[AgentsListPage] Delete failed:', err.message);
+      alert(`Failed to delete agent: ${err.message}`);
+    },
   });
 
   if (isLoading) {
@@ -40,8 +44,11 @@ export function AgentsListPage() {
   if (isError) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-red-600">Failed to load agents.</p>
-        <Button variant="secondary" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ['agents'] })}>
+        <p className="text-red-600 mb-2">Failed to load agents.</p>
+        {error instanceof Error && (
+          <p className="text-sm text-red-500 mb-4 bg-red-50 p-2 rounded">{error.message}</p>
+        )}
+        <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: ['agents'] })}>
           Retry
         </Button>
       </Card>
@@ -97,7 +104,7 @@ export function AgentsListPage() {
                         <Pencil size={14} />
                         <span className="sr-only">Edit</span>
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(agent)} aria-label="Delete">
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(agent)} aria-label="Delete" disabled={deleteMutation.isPending}>
                         <Trash2 size={14} className="text-red-500" />
                         <span className="sr-only">Delete</span>
                       </Button>

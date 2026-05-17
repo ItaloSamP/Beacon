@@ -84,6 +84,7 @@ class Agent(Base):
 
     user = relationship("User", back_populates="agents")
     data_sources = relationship("DataSource", back_populates="agent")
+    tokens = relationship("AgentToken", back_populates="agent", cascade="all, delete-orphan")
 
 
 class DataSource(Base):
@@ -139,6 +140,8 @@ class Anomaly(Base):
     detected_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
+    pipeline_run = relationship("PipelineRun")
+
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -159,6 +162,19 @@ class AlertRule(Base):
     enabled = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class AgentToken(Base):
+    __tablename__ = "agent_tokens"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    token_prefix = Column(String(20), nullable=False)
+    name = Column(String(100), nullable=False, default="Default")
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    agent = relationship("Agent", back_populates="tokens")
 
 
 class ApiKey(Base):

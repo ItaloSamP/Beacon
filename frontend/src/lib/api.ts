@@ -29,14 +29,18 @@ async function refreshAccessToken(): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
-    if (!response.ok) return false;
+    if (!response.ok) {
+      console.warn('[API] Token refresh failed:', response.status);
+      return false;
+    }
     const body = await response.json();
     if (body.data) {
       setTokens(body.data.access_token, body.data.refresh_token);
       return true;
     }
     return false;
-  } catch {
+  } catch (err) {
+    console.warn('[API] Token refresh network error:', err);
     return false;
   }
 }
@@ -71,7 +75,9 @@ export async function apiRequest<T>(
 
   const body = await response.json();
   if (!response.ok) {
-    throw new Error(body.message || body.error || 'Request failed');
+    const errorMessage = body.message || body.error || `Request failed (HTTP ${response.status})`;
+    console.error(`[API] ${options.method || 'GET'} ${url} → ${response.status}: ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 
   return body as T;
