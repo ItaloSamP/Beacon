@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './hooks/useAuth';
 import { Shell } from './components/layout/Shell';
 import { LoginPage } from './features/auth/LoginPage';
+import { RegisterPage } from './features/auth/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DataSourcesListPage } from './features/datasources/DataSourcesListPage';
 import { DataSourceForm } from './features/datasources/DataSourceForm';
@@ -30,6 +31,7 @@ export function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route element={<Shell />}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/agents" element={<AgentsListPage />} />

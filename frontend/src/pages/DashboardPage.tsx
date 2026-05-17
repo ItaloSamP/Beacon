@@ -73,6 +73,7 @@ export function DashboardPage() {
     data: anomaliesData,
     isLoading: anomaliesLoading,
     isError: anomaliesError,
+    error: anomaliesErrorObj,
   } = useQuery({
     queryKey: ['dashboard', 'anomalies-feed'],
     queryFn: () => api.get<{ data: Anomaly[]; meta: { total: number }; error: null }>('/anomalies/recent?limit=10'),
@@ -84,6 +85,7 @@ export function DashboardPage() {
     data: runsData,
     isLoading: runsLoading,
     isError: runsError,
+    error: runsErrorObj,
   } = useQuery({
     queryKey: ['dashboard', 'runs-feed'],
     queryFn: () => api.get<{ data: PipelineRun[]; meta: { total: number }; error: null }>('/pipeline-runs/recent?limit=10'),
@@ -168,6 +170,9 @@ export function DashboardPage() {
           ) : anomaliesError ? (
             <Card className="p-8 text-center">
               <p className="text-red-600 mb-2">Failed to load anomalies</p>
+              {anomaliesErrorObj instanceof Error && (
+                <p className="text-sm text-red-500 mb-4 bg-red-50 p-2 rounded mx-auto max-w-md">{anomaliesErrorObj.message}</p>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -219,6 +224,9 @@ export function DashboardPage() {
           ) : runsError ? (
             <Card className="p-8 text-center">
               <p className="text-red-600 mb-2">Failed to load pipeline runs</p>
+              {runsErrorObj instanceof Error && (
+                <p className="text-sm text-red-500 mb-4 bg-red-50 p-2 rounded mx-auto max-w-md">{runsErrorObj.message}</p>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
