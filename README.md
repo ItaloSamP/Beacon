@@ -88,7 +88,7 @@ npm run dev
 
 The dashboard is available at `http://localhost:5173`.
 
-Test user: `admin@beacon.local` / `admin123`
+Test user: `admin@beacon.dev` / `admin123`
 
 ---
 
