@@ -851,6 +851,37 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 **Solution:** Evidence files now use fixed names: `test-run-<issue>.md`, `coverage-<issue>.md`, `security-<issue>.md`. Each run overwrites the previous. Downstream skills reference the fixed name directly instead of `ls -t | head -1`. Affected skills: test-logger, coverage-reporter, security-checker, pr-description, create-pr, code-reviewer, senior-engineer-executor.
 **Source:** task-evidence-overwrite (2026-05-16)
 
+#### 2026-05-17 — Docker: Root pyproject.toml only packages app/ — agent needs separate install
+**Context:** The root `pyproject.toml` has `[tool.setuptools.packages.find]` with `include = ["app*"]`, meaning `pip install -e ".[dev]"` installs the `beacon` package (app/) but NOT the agent.
+**Discovery:** The backend Dockerfile must run TWO install commands: `pip install -e ".[dev]"` (root beacon package) AND `pip install -e ./agent/` (beacon-agent package with its CLI entry point). Failing to install the agent means `beacon-agent` CLI is not available in the backend container, and `from agent import ...` would fail for any code in `app/` that imports from `agent/`.
+**Solution:** After `COPY pyproject.toml` and `RUN pip install -e ".[dev]"`, add `COPY agent/pyproject.toml agent/__init__.py ./agent/` and `RUN pip install -e ./agent/`. Both packages are needed in the backend image because `scripts/generate_agent_token.py` and `scripts/entrypoint.sh` reference agent code.
+**Source:** task-dockerize-project — Backend Dockerfile implementation
+
+#### 2026-05-17 — Docker: Agent token provisioning via shared volume pattern
+**Context:** The agent service needs an authentication token that only the backend can generate. The backend and agent are separate Docker services with independent lifecycles.
+**Discovery:** A shared named volume (`beacon_token:/run/beacon`) bridges the two services. The backend's entrypoint runs `generate_agent_token.py` → `POST /api/v1/agents/{id}/tokens` → writes the token string to `/run/beacon/agent_token`. The agent's entrypoint polls for this file (`while [ ! -f /run/beacon/agent_token ]; do sleep 2; done`) then reads it into `BEACON_AGENT_TOKEN`. This avoids race conditions — the agent starts immediately but waits until the token is available.
+**Solution:** Volume `beacon_token` is mounted `rw` on backend and `ro` on agent. The `generate_agent_token.py` script uses `AGENT_TOKEN_FILE` env var (default `/run/beacon/agent_token`) and creates parent directories with `os.makedirs()`. The agent service depends on backend with `condition: service_started` (not `service_healthy`) to avoid deadlock — the backend becomes "started" before its entrypoint finishes, allowing the agent container to begin polling.
+**Source:** task-dockerize-project — docker-compose.yml and generate_agent_token.py
+
+#### 2026-05-17 — Docker: `.dockerignore` is universal — service-specific excludes go in Dockerfiles
+**Context:** A single `.dockerignore` applies to ALL service builds when using a shared build context (`.dockerignore` at project root).
+**Discovery:** Files that are needed by one service but excluded by `.dockerignore` would break that service's build. The `.dockerignore` should only exclude truly universal noise: `.git`, `__pycache__`, `.venv`, `.pytest_cache`, `node_modules`, IDE files, OS artifacts. Service-specific exclusions must be handled by selective `COPY` commands in each Dockerfile (e.g., the frontend Dockerfile only copies `frontend/`, the agent Dockerfile only copies `agent/`).
+**Solution:** Keep `.dockerignore` lean — 20 entries max. Each Dockerfile explicitly copies only what it needs. This decouples the build contexts without requiring per-service `.dockerignore` files or build context directories.
+**Source:** task-dockerize-project — .dockerignore design
+
+#### 2026-05-17 — Vite: `import.meta.env.VITE_BACKEND_URL` — NOT `process.env`
+**Context:** The task specification originally used `process.env.VITE_BACKEND_URL`, but Vite only exposes environment variables via `import.meta.env.VITE_*` (with the `VITE_` prefix).
+**Discovery:** Vite uses ES module syntax for environment variables. `process.env` is a Node.js/Webpack convention that does NOT work in Vite's ESM-based dev server. The correct usage is `import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'`. Variables without the `VITE_` prefix are NOT exposed to client-side code for security reasons.
+**Solution:** Always use `import.meta.env.VITE_<VAR_NAME>` in Vite configs and client code. The fallback (`|| 'http://localhost:8000'`) ensures the proxy works even when the env var is not set (e.g., local development outside Docker).
+**Source:** task-dockerize-project — vite.config.ts correction
+
+#### 2026-05-17 — Tester: No new learnings from task-dockerize-project test run
+**Context:** Full structural validation of 11 Docker infrastructure files (Dockerfiles, docker-compose.yml, entrypoint.sh, generate_agent_token.py, .dockerignore, .env.example, vite.config.ts, README.md).
+**Discovery:** All 18 structural checks passed (100%). Bandit: 0 issues. YAML valid, bash syntax valid, Docker Compose config valid. All required variables present in .env.example. The implementation already had 4 lessons learned entries (855-878) documenting the patterns discovered during implementation. No new patterns, pitfalls, or issues were discovered during testing.
+**Solution:** N/A — all validations passed. The 4 existing lessons learned entries comprehensively document the Dockerization patterns.
+**Source:** task-dockerize-project — Tester verification (2026-05-17)
+
+
 ---
 
 *Created by @project-setup on 2026-05-12*
