@@ -29,13 +29,18 @@ def _serialize_datasource(ds, mask_config: bool = False) -> dict:
         "updated_at": ds.updated_at.isoformat() if ds.updated_at else None,
     }
 
-    # Include agent summary if linked
-    if ds.agent_id and hasattr(ds, "agent") and ds.agent:
-        result["agent"] = {
-            "id": str(ds.agent.id),
-            "name": ds.agent.name,
-            "status": ds.agent.status.value if hasattr(ds.agent.status, "value") else str(ds.agent.status),
-        }
+    # Include agent summary if linked AND loaded (avoid MissingGreenlet on lazy-load)
+    if ds.agent_id:
+        try:
+            agent = ds.agent
+            if agent is not None:
+                result["agent"] = {
+                    "id": str(agent.id),
+                    "name": agent.name,
+                    "status": agent.status.value if hasattr(agent.status, "value") else str(agent.status),
+                }
+        except Exception:
+            pass
     return result
 
 

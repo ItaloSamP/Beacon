@@ -48,6 +48,20 @@ class PipelineRunService:
         )
         pipeline_run = await self.pipeline_run_repo.create(pipeline_run)
 
+        return await self._execute_pipeline(pipeline, pipeline_run)
+
+    async def continue_pipeline_run(self, run_id: str) -> PipelineRun:
+        pipeline_run = await self.pipeline_run_repo.get_by_id(run_id)
+        if not pipeline_run:
+            raise NotFoundException("Pipeline run not found")
+
+        pipeline = await self.pipeline_repo.get_by_id(pipeline_run.pipeline_id)
+        if not pipeline:
+            raise NotFoundException("Pipeline not found")
+
+        return await self._execute_pipeline(pipeline, pipeline_run)
+
+    async def _execute_pipeline(self, pipeline: Pipeline, pipeline_run: PipelineRun) -> PipelineRun:
         try:
             datasource = await self.datasource_repo.get_by_id(pipeline.data_source_id)
             if not datasource:

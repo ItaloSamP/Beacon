@@ -1,12 +1,22 @@
 from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db
+from app.infrastructure.database import get_db, async_session_factory
+from app.infrastructure.repositories.pipeline_repo import PipelineRepository
 from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
 from app.application.pipeline_runner import PipelineRunService
 from app.presentation.api.middleware.auth import require_auth
+from app.domain.models import PipelineRun, PipelineRunStatus
+from app.domain.schemas import (
+    ApiResponse,
+    PaginatedApiResponse,
+    PipelineRunResponse,
+    PipelineRunTriggerResponse,
+    PipelineRunListResponse,
+)
 from app.shared.exceptions import NotFoundException
 from app.domain.schemas import (
     ApiResponse,
@@ -50,15 +60,33 @@ async def trigger_pipeline_run(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
-    service = PipelineRunService(db)
-    background_tasks.add_task(service.run_pipeline, str(pipeline_id))
+    run_repo = PipelineRunRepository(db)
+    pipeline_run = PipelineRun(
+        pipeline_id=pipeline_id,
+        status=PipelineRunStatus.success,
+        metrics_json={},
+        started_at=datetime.now(timezone.utc),
+    )
+    run = await run_repo.create(pipeline_run)
+
+    background_tasks.add_task(_run_pipeline_in_background, str(run.id))
+
     return ApiResponse(
         data=PipelineRunTriggerResponse(
-            run_id="pending",
+            run_id=str(run.id),
             pipeline_id=str(pipeline_id),
             status="started",
         )
     )
+
+
+async def _run_pipeline_in_background(run_id: str):
+    async with async_session_factory() as db:
+        service = PipelineRunService(db)
+        try:
+            await service.continue_pipeline_run(run_id)
+        except Exception:
+            pass
 
 
 @router.get("/pipelines/{pipeline_id}/runs")
