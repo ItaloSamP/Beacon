@@ -40,7 +40,95 @@ Setup in 5 minutes, zero validation queries required.
 
 ---
 
-## Prerequisites
+## Docker Quick Start
+
+The fastest way to run Beacon is with Docker Compose — everything starts with a single command:
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) (included in Docker Desktop)
+- **Windows users:** For good I/O performance, clone the project inside your WSL2 filesystem (`/home/...`), not under `/mnt/c/...`
+
+### Start Everything
+
+```bash
+# 1. Set up your environment
+cp .env.example .env
+
+# 2. Start all services (PostgreSQL, Redis, Backend, Frontend, Agent)
+docker compose up
+```
+
+That's it! The first build takes 2-3 minutes. Subsequent starts are instant.
+
+### Access Points
+
+| Service  | URL                          | Description              |
+|----------|------------------------------|--------------------------|
+| Frontend | http://localhost:5173        | React Dashboard          |
+| Backend  | http://localhost:8000        | FastAPI REST API         |
+| API Docs | http://localhost:8000/docs   | Swagger UI               |
+| Postgres | localhost:5432               | PostgreSQL 16            |
+| Redis    | localhost:6379               | Redis 7                  |
+
+### Test User
+
+| Email              | Password  |
+|--------------------|-----------|
+| admin@beacon.dev   | admin123  |
+
+### What Happens on Startup
+
+1. **PostgreSQL** and **Redis** start with health checks
+2. **Backend** waits for both, then:
+   - Runs database migrations (`alembic upgrade head`)
+   - Seeds sample data (admin user, agent, datasources, pipelines)
+   - Generates an agent token for the local dev agent
+   - Starts the FastAPI server with hot-reload on port 8000
+3. **Frontend** starts the Vite dev server with hot-reload on port 5173, proxying `/api` to the backend
+4. **Agent** waits for the token file, then connects to the backend and starts profiling
+
+### Port Conflicts
+
+If ports are already in use on your host, create a `docker-compose.override.yml`:
+
+```yaml
+services:
+  postgres:
+    ports: ["5433:5432"]
+  backend:
+    ports: ["8001:8000"]
+  frontend:
+    ports: ["5174:5173"]
+```
+
+Then update your local `.env` to match the new ports.
+
+### Rebuilding After Dependency Changes
+
+If `pyproject.toml` or `package.json` changes, rebuild the affected service:
+
+```bash
+docker compose build backend    # Python deps changed
+docker compose build frontend   # Node deps changed
+docker compose build agent      # Agent deps changed
+```
+
+### Running Tests Inside Docker
+
+```bash
+# Backend unit + migration tests (no PostgreSQL issues on Linux containers!)
+docker compose exec backend python -m pytest tests/application/ tests/migrations/ -v
+
+# Backend full test suite (integration tests require PostgreSQL — works on Linux containers)
+docker compose exec backend python -m pytest tests/ -v
+
+# Frontend tests
+docker compose exec frontend npx vitest run
+```
+
+---
+
+## Prerequisites (Manual Setup)
 
 - Python 3.13+
 - Node.js 20+
@@ -49,7 +137,7 @@ Setup in 5 minutes, zero validation queries required.
 
 ---
 
-## Quick Start
+## Quick Start (Manual Setup)
 
 ### 1. Clone and set up environment
 
