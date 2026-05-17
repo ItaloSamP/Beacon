@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 
 from app.domain.models import DataSource
 
@@ -41,7 +42,8 @@ class DataSourceRepository:
         total = total_result.scalar() or 0
 
         query = (
-            query.offset((page - 1) * per_page)
+            query.options(selectinload(DataSource.agent))
+            .offset((page - 1) * per_page)
             .limit(per_page)
             .order_by(DataSource.created_at.desc())
         )
@@ -62,5 +64,5 @@ class DataSourceRepository:
         return ds
 
     async def delete(self, ds: DataSource) -> None:
-        await self.db.delete(ds)
+        self.db.delete(ds)
         await self.db.flush()

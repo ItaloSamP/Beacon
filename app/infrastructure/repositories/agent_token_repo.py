@@ -37,5 +37,5 @@ class AgentTokenRepository:
     async def delete(self, token_id: UUID) -> None:
         token = await self.db.get(AgentToken, token_id)
         if token:
-            await self.db.delete(token)
+            self.db.delete(token)
             await self.db.flush()
