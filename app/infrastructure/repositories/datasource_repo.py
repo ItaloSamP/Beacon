@@ -64,5 +64,5 @@ class DataSourceRepository:
         return ds
 
     async def delete(self, ds: DataSource) -> None:
-        self.db.delete(ds)
+        await self.db.delete(ds)
         await self.db.flush()

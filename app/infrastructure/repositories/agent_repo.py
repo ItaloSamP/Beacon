@@ -53,5 +53,5 @@ class AgentRepository:
         return agent
 
     async def delete(self, agent: Agent) -> None:
-        self.db.delete(agent)
+        await self.db.delete(agent)
         await self.db.flush()

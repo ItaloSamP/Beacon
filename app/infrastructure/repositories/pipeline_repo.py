@@ -65,5 +65,5 @@ class PipelineRepository:
         return pipeline
 
     async def delete(self, pipeline: Pipeline) -> None:
-        self.db.delete(pipeline)
+        await self.db.delete(pipeline)
         await self.db.flush()
