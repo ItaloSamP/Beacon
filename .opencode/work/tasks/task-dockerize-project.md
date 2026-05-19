@@ -1,6 +1,6 @@
 # Task: task-dockerize-project — Dockerização Completa do Projeto Beacon
 
-## Status: READY_TO_COMMIT
+## Status: DONE
 
 ## Metadata
 - **Type:** chore (infrastructure)

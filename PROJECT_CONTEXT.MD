@@ -366,8 +366,8 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 | Aspect | Value |
 |--------|-------|
-| Figma File Key | N/A |
-| Figma File URL | N/A (a definir — design inicial será direto no código com Tailwind) |
+| Figma File Key | uq30Y3KWwjVleDbBJwmlUz |
+| Figma File URL | https://www.figma.com/design/uq30Y3KWwjVleDbBJwmlUz |
 | Primary Font | Inter (via Tailwind default font stack) |
 | Color Palette | Tailwind default palette (slate gray base, blue accent para ações, red/amber/green para severidade de alertas) |
 | Icon Library | Lucide React |
