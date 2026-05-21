@@ -15,7 +15,7 @@ import userEvent from '@testing-library/user-event';
 // ============================================================
 // IMPORT THAT WILL FAIL (RED PHASE — component doesn't exist)
 // ============================================================
-import { Button } from '../../../../components/ui/Button';
+import { Button } from '../Button';
 
 
 describe('Button', () => {
@@ -253,6 +253,122 @@ describe('Button', () => {
 
       expect(screen.getByTestId('icon')).toBeInTheDocument();
       expect(screen.getByText('Add Item')).toBeInTheDocument();
+    });
+  });
+
+  // ==========================================================
+  // Critical variant (NEW — RED PHASE)
+  // ==========================================================
+  describe('critical variant', () => {
+    it('should render critical variant', () => {
+      render(<Button variant="critical">Critical Action</Button>);
+
+      const button = screen.getByRole('button', { name: /critical action/i });
+      expect(button).toBeInTheDocument();
+    });
+
+    it('should apply purple/violet styling for critical variant', () => {
+      render(<Button variant="critical">Critical</Button>);
+
+      const button = screen.getByRole('button');
+      // Critical should use purple/violet colors (theme token)
+      expect(button.className).toMatch(/violet|purple|critical/);
+    });
+  });
+
+  // ==========================================================
+  // Icon-only button (NEW — RED PHASE)
+  // ==========================================================
+  describe('icon-only button', () => {
+    it('should render icon size variant (square button)', () => {
+      render(
+        <Button size="icon" aria-label="Close">
+          <span>×</span>
+        </Button>
+      );
+
+      const button = screen.getByRole('button', { name: /close/i });
+      expect(button).toBeInTheDocument();
+    });
+
+    it('should have equal width and height for icon button', () => {
+      render(
+        <Button size="icon" aria-label="Settings">
+          ⚙
+        </Button>
+      );
+
+      const button = screen.getByRole('button');
+      // Icon button should have padding that makes it square-ish
+      expect(button.className).toMatch(/p-\d/);
+    });
+
+    it('should still be accessible with aria-label', () => {
+      render(
+        <Button size="icon" aria-label="Delete item">
+          <span>🗑</span>
+        </Button>
+      );
+
+      expect(
+        screen.getByRole('button', { name: /delete item/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  // ==========================================================
+  // Full-width button (NEW — RED PHASE)
+  // ==========================================================
+  describe('fullWidth prop', () => {
+    it('should render full-width button when fullWidth is true', () => {
+      render(<Button fullWidth>Full Width</Button>);
+
+      const button = screen.getByRole('button');
+      expect(button.className).toMatch(/w-full/);
+    });
+
+    it('should NOT be full-width by default', () => {
+      render(<Button>Normal</Button>);
+
+      const button = screen.getByRole('button');
+      expect(button.className).not.toMatch(/w-full/);
+    });
+  });
+
+  // ==========================================================
+  // Keyboard Enter activation (NEW — RED PHASE)
+  // ==========================================================
+  describe('keyboard activation', () => {
+    it('should call onClick when Enter key is pressed', async () => {
+      const handleClick = vi.fn();
+      render(<Button onClick={handleClick}>Enter Me</Button>);
+
+      const button = screen.getByRole('button');
+      button.focus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onClick when Space key is pressed', async () => {
+      const handleClick = vi.fn();
+      render(<Button onClick={handleClick}>Space Me</Button>);
+
+      const button = screen.getByRole('button');
+      button.focus();
+      await userEvent.keyboard(' ');
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT call onClick on Enter when disabled', async () => {
+      const handleClick = vi.fn();
+      render(<Button onClick={handleClick} disabled>Disabled</Button>);
+
+      const button = screen.getByRole('button');
+      await userEvent.keyboard('{Enter}');
+
+      expect(handleClick).not.toHaveBeenCalled();
     });
   });
 });
