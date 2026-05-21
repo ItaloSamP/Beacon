@@ -195,16 +195,13 @@ describe('AgentForm', () => {
     it('should submit updates on save in edit mode', async () => {
       renderEditForm('agent-uuid-001');
 
-      await waitFor(async () => {
-        const nameInput = screen.getByLabelText(/name|nome/i) || screen.getByPlaceholderText(/name|nome/i);
-        if (nameInput) {
-          await userEvent.clear(nameInput);
-          await userEvent.type(nameInput, 'Updated Agent Name');
+      // Wait for loading to finish and form to render
+      const nameInput = await screen.findByLabelText(/name|nome/i);
+      await userEvent.clear(nameInput);
+      await userEvent.type(nameInput, 'Updated Agent Name');
 
-          const submitButton = screen.getByRole('button', { name: /save|salvar|atualizar|update|submit/i });
-          await userEvent.click(submitButton);
-        }
-      });
+      const submitButton = screen.getByRole('button', { name: /save|salvar|atualizar|update|submit/i });
+      await userEvent.click(submitButton);
     });
   });
 

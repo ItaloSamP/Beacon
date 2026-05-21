@@ -124,25 +124,35 @@ export function AnomaliesListPage() {
       ) : (
         <>
           <Card>
-            <Table headers={['Severity', 'Type', 'Description', 'Detected At', 'Status', 'Actions']}>
+            <Table>
+              <Table.Head>
+                <Table.Row>
+                  <Table.Cell header>Severity</Table.Cell>
+                  <Table.Cell header>Type</Table.Cell>
+                  <Table.Cell header>Description</Table.Cell>
+                  <Table.Cell header>Detected At</Table.Cell>
+                  <Table.Cell header>Status</Table.Cell>
+                  <Table.Cell header>Actions</Table.Cell>
+                </Table.Row>
+              </Table.Head>
               {anomalies.map((a) => (
-                <tr key={a.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="p-3">
+                <Table.Row key={a.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <Table.Cell>
                     <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
-                  </td>
-                  <td className="p-3 text-sm text-gray-600 capitalize">{a.type.replace('_', ' ')}</td>
-                  <td className="p-3 text-sm max-w-xs">
+                  </Table.Cell>
+                  <Table.Cell className="text-sm text-gray-600 capitalize">{a.type.replace('_', ' ')}</Table.Cell>
+                  <Table.Cell className="text-sm max-w-xs">
                     <Link to={`/anomalies/${a.id}`} className="hover:text-blue-600">
                       {a.description}
                     </Link>
-                  </td>
-                  <td className="p-3 text-sm text-gray-500">{formatDate(a.detected_at)}</td>
-                  <td className="p-3">
+                  </Table.Cell>
+                  <Table.Cell className="text-sm text-gray-500">{formatDate(a.detected_at)}</Table.Cell>
+                  <Table.Cell>
                     <Badge variant={a.resolved_at ? 'success' : 'warning'}>
                       {a.resolved_at ? 'Resolved' : 'Pending'}
                     </Badge>
-                  </td>
-                  <td className="p-3">
+                  </Table.Cell>
+                  <Table.Cell>
                     <div className="flex gap-2">
                       <Link
                         to={`/anomalies/${a.id}`}
@@ -161,8 +171,8 @@ export function AnomaliesListPage() {
                         </Button>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               ))}
             </Table>
           </Card>

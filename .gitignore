@@ -6,6 +6,9 @@ Thumbs.db
 # Dependencies
 node_modules/
 .opencode/node_modules/
+.opencode/opencode.json
+opencode.json
+design-prototypes
 
 # Environment
 .env
@@ -14,6 +17,7 @@ node_modules/
 *.pem
 *.key
 *.db
+
 
 # Python
 __pycache__/
@@ -31,3 +35,4 @@ frontend/coverage/
 
 # Alembic
 alembic/versions/*.pyc
+

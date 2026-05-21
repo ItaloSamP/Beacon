@@ -804,7 +804,7 @@ export const anomalyHandlers = [
       severity: body.severity,
       type: body.type,
       description: body.description || '',
-      deviation_details: (body.deviation_details as Record<string, unknown>) || {},
+      deviation_details: (body.deviation_details as unknown as Record<string, unknown>) || {},
       detected_at: new Date().toISOString(),
       resolved_at: null,
     };
@@ -879,11 +879,12 @@ export const pipelineRunHandlers = [
   http.post(`${API_BASE}/pipelines/:pipelineId/run`, ({ params }) => {
     const { pipelineId } = params;
     const runId = `prun-uuid-${Date.now()}`;
+    const pid = pipelineId as string;
 
     const run = {
       id: runId,
-      pipeline_id: pipelineId,
-      pipeline: { id: pipelineId, name: 'Daily Volume Check', type: 'volume' },
+      pipeline_id: pid,
+      pipeline: { id: pid, name: 'Daily Volume Check', type: 'volume' },
       status: 'started',
       metrics_json: {},
       started_at: new Date().toISOString(),
@@ -896,7 +897,7 @@ export const pipelineRunHandlers = [
       {
         data: {
           run_id: runId,
-          pipeline_id: pipelineId,
+          pipeline_id: pid,
           status: 'started',
           message: 'Pipeline run triggered successfully',
         },
@@ -960,6 +961,29 @@ export const pipelineRunHandlers = [
       {
         data: pageData,
         meta: { page, per_page: perPage, total },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
+];
+
+// ============================================================
+// Dashboard Stats handlers
+// ============================================================
+
+export const dashboardStatsHandlers = [
+  // GET /api/v1/dashboard/stats
+  http.get(`${API_BASE}/dashboard/stats`, () => {
+    return HttpResponse.json(
+      {
+        data: {
+          total: 5,
+          healthy: 3,
+          warning: 1,
+          error: 1,
+          offline: 0,
+        },
         error: null,
       },
       { status: 200 }
@@ -1037,4 +1061,5 @@ export const handlers = [
   ...anomalyHandlers,
   ...pipelineRunHandlers,
   ...agentTokenHandlers,
+  ...dashboardStatsHandlers,
 ];

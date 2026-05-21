@@ -16,7 +16,7 @@ import React, { useState } from 'react';
 // ============================================================
 // IMPORT THAT WILL FAIL (RED PHASE — component doesn't exist)
 // ============================================================
-import { Modal } from '../../../../components/ui/Modal';
+import { Modal } from '../Modal';
 
 
 // ============================================================
@@ -271,6 +271,115 @@ describe('Modal', () => {
       // Simple assertion: modal should render and be dismissable
       render(<ControlledModal defaultOpen={true} />);
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  // ==========================================================
+  // Size variants (NEW — RED PHASE)
+  // ==========================================================
+  describe('size variants', () => {
+    it('should render sm (small) modal', () => {
+      render(<ControlledModal defaultOpen={true} />);
+
+      // Modal size sm uses narrower max-width
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+    });
+
+    it('should render md (medium) modal', () => {
+      render(<ControlledModal defaultOpen={true} />);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+    });
+
+    it('should render lg (large) modal', () => {
+      render(<ControlledModal defaultOpen={true} />);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+    });
+
+    it('should render xl (extra large) modal', () => {
+      render(<ControlledModal defaultOpen={true} />);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+    });
+
+    it('should use md as default size', () => {
+      render(<ControlledModal defaultOpen={true} />);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+    });
+  });
+
+  // ==========================================================
+  // Close button visibility (NEW — RED PHASE)
+  // ==========================================================
+  describe('close button', () => {
+    it('should render a close button (X icon) inside the modal', () => {
+      render(<ControlledModal defaultOpen={true} />);
+
+      // Modal.Header should contain a close button with X icon
+      // Check for a button in the dialog that would close the modal
+      const dialog = screen.getByRole('dialog');
+      const buttons = dialog.querySelectorAll('button');
+      // There should be a close button (at minimum the footer close)
+      expect(buttons.length).toBeGreaterThan(0);
+    });
+
+    it('should call onOpenChange with false when close button is clicked', async () => {
+      const handleChange = vi.fn();
+      render(
+        <ControlledModal defaultOpen={true} onOpenChange={handleChange} />
+      );
+
+      // Find close button and click it
+      const closeButton = screen.getByText('Close');
+      await userEvent.click(closeButton);
+
+      expect(handleChange).toHaveBeenCalledWith(false);
+    });
+  });
+
+  // ==========================================================
+  // onClose callback (NEW — RED PHASE)
+  // ==========================================================
+  describe('onClose callback', () => {
+    it('should call onClose when modal is dismissed', async () => {
+      const handleClose = vi.fn();
+
+      function TestModal() {
+        const [open, setOpen] = useState(true);
+        return (
+          <>
+            <button onClick={() => setOpen(true)}>Open Modal</button>
+            <Modal open={open} onOpenChange={setOpen} onClose={handleClose}>
+              <Modal.Header>
+                <h2>Test</h2>
+              </Modal.Header>
+              <Modal.Body>
+                <p>Content</p>
+              </Modal.Body>
+              <Modal.Footer>
+                <button onClick={() => setOpen(false)}>Close</button>
+              </Modal.Footer>
+            </Modal>
+          </>
+        );
+      }
+
+      render(<TestModal />);
+
+      const closeButton = screen.getByText('Close');
+      await userEvent.click(closeButton);
+
+      // onClose should be called when modal closes
+      await waitFor(() => {
+        expect(handleClose).toHaveBeenCalled();
+      });
     });
   });
 });

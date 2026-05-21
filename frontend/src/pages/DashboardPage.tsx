@@ -187,22 +187,30 @@ export function DashboardPage() {
             </Card>
           ) : (
             <Card>
-              <Table headers={['Severity', 'Type', 'Description', 'Date']}>
+              <Table>
+                <Table.Head>
+                  <Table.Row>
+                    <Table.Cell header>Severity</Table.Cell>
+                    <Table.Cell header>Type</Table.Cell>
+                    <Table.Cell header>Description</Table.Cell>
+                    <Table.Cell header>Date</Table.Cell>
+                  </Table.Row>
+                </Table.Head>
                 {anomalies.map((a) => (
-                  <tr key={a.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="p-3">
+                  <Table.Row key={a.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <Table.Cell>
                       <Link to={`/anomalies/${a.id}`}>
                         <Badge variant={severityVariant(a.severity)}>{a.severity}</Badge>
                       </Link>
-                    </td>
-                    <td className="p-3 text-sm text-gray-600">{a.type}</td>
-                    <td className="p-3 text-sm max-w-xs truncate">
+                    </Table.Cell>
+                    <Table.Cell className="text-sm text-gray-600">{a.type}</Table.Cell>
+                    <Table.Cell className="text-sm max-w-xs truncate">
                       <Link to={`/anomalies/${a.id}`} className="hover:text-blue-600">
                         {a.description}
                       </Link>
-                    </td>
-                    <td className="p-3 text-sm text-gray-500">{formatDate(a.detected_at)}</td>
-                  </tr>
+                    </Table.Cell>
+                    <Table.Cell className="text-sm text-gray-500">{formatDate(a.detected_at)}</Table.Cell>
+                  </Table.Row>
                 ))}
               </Table>
             </Card>
@@ -241,24 +249,32 @@ export function DashboardPage() {
             </Card>
           ) : (
             <Card>
-              <Table headers={['Pipeline', 'Status', 'Duration', 'Date']}>
+              <Table>
+                <Table.Head>
+                  <Table.Row>
+                    <Table.Cell header>Pipeline</Table.Cell>
+                    <Table.Cell header>Status</Table.Cell>
+                    <Table.Cell header>Duration</Table.Cell>
+                    <Table.Cell header>Date</Table.Cell>
+                  </Table.Row>
+                </Table.Head>
                 {runs.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="p-3 text-sm font-medium">
+                  <Table.Row key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <Table.Cell className="text-sm font-medium">
                       <Link to={`/pipelines/${r.pipeline_id}/runs`} className="hover:text-blue-600">
                         {r.pipeline?.name ?? r.pipeline_id}
                       </Link>
-                    </td>
-                    <td className="p-3">
+                    </Table.Cell>
+                    <Table.Cell>
                       <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
-                    </td>
-                    <td className="p-3 text-sm text-gray-500">
+                    </Table.Cell>
+                    <Table.Cell className="text-sm text-gray-500">
                       {r.finished_at
                         ? `${Math.round((new Date(r.finished_at).getTime() - new Date(r.started_at).getTime()) / 1000)}s`
                         : '—'}
-                    </td>
-                    <td className="p-3 text-sm text-gray-500">{formatDate(r.started_at)}</td>
-                  </tr>
+                    </Table.Cell>
+                    <Table.Cell className="text-sm text-gray-500">{formatDate(r.started_at)}</Table.Cell>
+                  </Table.Row>
                 ))}
               </Table>
             </Card>

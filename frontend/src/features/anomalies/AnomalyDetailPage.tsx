@@ -200,17 +200,24 @@ export function AnomalyDetailPage() {
       {alerts.length > 0 && (
         <Card className="p-6 mt-6">
           <h2 className="text-lg font-semibold mb-4">Alerts</h2>
-          <Table headers={['Channel', 'Status', 'Sent At']}>
+          <Table>
+            <Table.Head>
+              <Table.Row>
+                <Table.Cell header>Channel</Table.Cell>
+                <Table.Cell header>Status</Table.Cell>
+                <Table.Cell header>Sent At</Table.Cell>
+              </Table.Row>
+            </Table.Head>
             {alerts.map((alert) => (
-              <tr key={alert.id} className="border-b border-gray-100">
-                <td className="p-3 text-sm font-medium capitalize">{alert.channel}</td>
-                <td className="p-3">
+              <Table.Row key={alert.id} className="border-b border-gray-100">
+                <Table.Cell className="text-sm font-medium capitalize">{alert.channel}</Table.Cell>
+                <Table.Cell>
                   <Badge variant={alertStatusVariant(alert.status)}>{alert.status}</Badge>
-                </td>
-                <td className="p-3 text-sm text-gray-500">
+                </Table.Cell>
+                <Table.Cell className="text-sm text-gray-500">
                   {alert.sent_at ? alert.sent_at : '—'}
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ))}
           </Table>
         </Card>

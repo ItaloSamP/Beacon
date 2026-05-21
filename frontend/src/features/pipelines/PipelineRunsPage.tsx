@@ -105,18 +105,27 @@ export function PipelineRunsPage() {
         </Card>
       ) : (
         <Card>
-          <Table headers={['Status', 'Started At', 'Finished At', 'Duration', 'Metrics']}>
+          <Table>
+            <Table.Head>
+              <Table.Row>
+                <Table.Cell header>Status</Table.Cell>
+                <Table.Cell header>Started At</Table.Cell>
+                <Table.Cell header>Finished At</Table.Cell>
+                <Table.Cell header>Duration</Table.Cell>
+                <Table.Cell header>Metrics</Table.Cell>
+              </Table.Row>
+            </Table.Head>
             {runs.map((r) => (
-              <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="p-3">
+              <Table.Row key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <Table.Cell>
                   <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
-                </td>
-                <td className="p-3 text-sm text-gray-600">{r.started_at}</td>
-                <td className="p-3 text-sm text-gray-600">{r.finished_at ?? '—'}</td>
-                <td className="p-3 text-sm text-gray-500">
+                </Table.Cell>
+                <Table.Cell className="text-sm text-gray-600">{r.started_at}</Table.Cell>
+                <Table.Cell className="text-sm text-gray-600">{r.finished_at ?? '—'}</Table.Cell>
+                <Table.Cell className="text-sm text-gray-500">
                   {formatDuration(r.started_at, r.finished_at)}
-                </td>
-                <td className="p-3 text-sm text-gray-500">
+                </Table.Cell>
+                <Table.Cell className="text-sm text-gray-500">
                   <div className="flex flex-wrap gap-1">
                     {Object.entries(r.metrics_json).slice(0, 3).map(([key, value]) => (
                       <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-xs">
@@ -129,8 +138,8 @@ export function PipelineRunsPage() {
                       </span>
                     )}
                   </div>
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ))}
           </Table>
         </Card>
