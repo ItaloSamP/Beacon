@@ -92,3 +92,59 @@ export const api = {
   delete: <T>(endpoint: string) =>
     apiRequest<T>(endpoint, { method: 'DELETE' }),
 };
+
+// ============================================================
+// Typed endpoint response shapes
+// ============================================================
+
+export interface DashboardStats {
+  total: number;
+  healthy: number;
+  warning: number;
+  error: number;
+  offline: number;
+}
+
+export interface AnomalySummary {
+  id: string;
+  severity: string;
+  type: string;
+  description: string;
+  detected_at: string;
+}
+
+export interface PipelineRunSummary {
+  id: string;
+  pipeline_id: string;
+  status: string;
+  started_at: string;
+}
+
+interface ApiEnvelope<T> {
+  data: T;
+  error: string | null;
+}
+
+// ============================================================
+// Typed endpoint functions
+// ============================================================
+
+export async function getDashboardStats(): Promise<ApiEnvelope<DashboardStats>> {
+  return api.get<ApiEnvelope<DashboardStats>>('/dashboard/stats');
+}
+
+export async function getAnomaliesRecent(limit?: number): Promise<AnomalySummary[]> {
+  const endpoint = limit != null
+    ? `/anomalies/recent?limit=${limit}`
+    : '/anomalies/recent';
+  const response = await api.get<ApiEnvelope<AnomalySummary[]>>(endpoint);
+  return response.data;
+}
+
+export async function getPipelineRunsRecent(limit?: number): Promise<PipelineRunSummary[]> {
+  const endpoint = limit != null
+    ? `/pipeline-runs/recent?limit=${limit}`
+    : '/pipeline-runs/recent';
+  const response = await api.get<ApiEnvelope<PipelineRunSummary[]>>(endpoint);
+  return response.data;
+}
