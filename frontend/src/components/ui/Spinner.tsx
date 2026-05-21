@@ -1,16 +1,39 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface SpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'primary' | 'white';
   className?: string;
+  'aria-label'?: string;
 }
 
-export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
-  const sizes: Record<string, string> = { sm: 'w-4 h-4', md: 'w-8 h-8', lg: 'w-12 h-12' };
+export function Spinner({
+  size = 'md',
+  variant = 'primary',
+  className = '',
+  'aria-label': ariaLabel = 'Loading',
+}: SpinnerProps) {
+  const sizes: Record<string, string> = {
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12',
+    xl: 'w-16 h-16',
+  };
+
+  const variants: Record<string, string> = {
+    primary: 'text-primary',
+    white: 'text-white',
+  };
+
   return (
-    <div
+    <span
       role="status"
-      className={`animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 ${sizes[size]} ${className}`}
-    />
+      aria-busy="true"
+      aria-label={ariaLabel}
+      className={`animate-spin inline-block ${sizes[size]} ${variants[variant]} ${className}`}
+    >
+      <Loader2 className="w-full h-full" aria-hidden="true" />
+    </span>
   );
 }
