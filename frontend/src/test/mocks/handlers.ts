@@ -106,6 +106,64 @@ export const authHandlers = [
   http.post(`${API_BASE}/auth/logout`, () => {
     return new HttpResponse(null, { status: 204 });
   }),
+
+  // POST /api/v1/auth/forgot-password
+  http.post(`${API_BASE}/auth/forgot-password`, async ({ request }) => {
+    const body = await request.json() as Record<string, string>;
+
+    if (!body.email) {
+      return HttpResponse.json(
+        { data: null, error: 'validation_error', message: 'Email is required' },
+        { status: 422 }
+      );
+    }
+
+    return HttpResponse.json(
+      {
+        data: {
+          message: 'If an account exists for that email, a password reset link has been sent.',
+        },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // POST /api/v1/auth/reset-password
+  http.post(`${API_BASE}/auth/reset-password`, async ({ request }) => {
+    const body = await request.json() as Record<string, string>;
+
+    if (!body.token) {
+      return HttpResponse.json(
+        { data: null, error: 'validation_error', message: 'Reset token is required' },
+        { status: 422 }
+      );
+    }
+
+    if (!body.password) {
+      return HttpResponse.json(
+        { data: null, error: 'validation_error', message: 'Password is required' },
+        { status: 422 }
+      );
+    }
+
+    if (body.token === 'invalid-or-expired-token') {
+      return HttpResponse.json(
+        { data: null, error: 'invalid_token', message: 'Reset token is invalid or has expired' },
+        { status: 400 }
+      );
+    }
+
+    return HttpResponse.json(
+      {
+        data: {
+          message: 'Password has been reset successfully.',
+        },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
 ];
 
 // ============================================================
@@ -118,6 +176,8 @@ let mockDataSources: Array<{
   type: string;
   connection_config: Record<string, unknown>;
   status: string;
+  host: string | null;
+  last_profiled_at: string | null;
   agent_id: string | null;
   agent: { id: string; name: string; status: string } | null;
   created_at: string;
@@ -127,8 +187,10 @@ let mockDataSources: Array<{
     id: 'ds-uuid-001',
     name: 'Production PostgreSQL',
     type: 'postgres',
-    connection_config: { host: 'prod.db', port: 5432 },
+    connection_config: { host: 'prod.db.internal', port: 5432 },
     status: 'active',
+    host: 'prod.db.internal',
+    last_profiled_at: '2026-05-20T10:00:00Z',
     agent_id: 'agent-uuid-001',
     agent: { id: 'agent-uuid-001', name: 'Production Agent', status: 'online' },
     created_at: '2026-05-12T00:00:00Z',
@@ -138,8 +200,10 @@ let mockDataSources: Array<{
     id: 'ds-uuid-002',
     name: 'Analytics MySQL',
     type: 'mysql',
-    connection_config: { host: 'analytics.db', port: 3306 },
+    connection_config: { host: 'analytics.db.internal', port: 3306 },
     status: 'active',
+    host: 'analytics.db.internal',
+    last_profiled_at: '2026-05-20T09:30:00Z',
     agent_id: 'agent-uuid-002',
     agent: { id: 'agent-uuid-002', name: 'Staging Agent', status: 'offline' },
     created_at: '2026-05-12T01:00:00Z',
@@ -151,10 +215,25 @@ let mockDataSources: Array<{
     type: 'bigquery',
     connection_config: {},
     status: 'inactive',
+    host: null,
+    last_profiled_at: null,
     agent_id: null,
     agent: null,
     created_at: '2026-05-11T00:00:00Z',
     updated_at: '2026-05-11T00:00:00Z',
+  },
+  {
+    id: 'ds-uuid-004',
+    name: 'Legacy MySQL (read-only)',
+    type: 'mysql',
+    connection_config: { host: 'legacy.db.internal', port: 3306 },
+    status: 'error',
+    host: 'legacy.db.internal',
+    last_profiled_at: '2026-05-20T11:00:00Z',
+    agent_id: 'agent-uuid-002',
+    agent: { id: 'agent-uuid-002', name: 'Staging Agent', status: 'offline' },
+    created_at: '2026-05-10T00:00:00Z',
+    updated_at: '2026-05-10T00:00:00Z',
   },
 ];
 
@@ -207,6 +286,8 @@ export const datasourceHandlers = [
       type: body.type,
       connection_config: body.connection_config || {},
       status: body.status || 'active',
+      host: ((body.connection_config as unknown) as Record<string, unknown> | undefined)?.host as string || null,
+      last_profiled_at: null,
       agent_id: body.agent_id || null,
       agent: body.agent_id
         ? { id: body.agent_id, name: 'Mock Agent', status: 'online' }
@@ -223,7 +304,7 @@ export const datasourceHandlers = [
     );
   }),
 
-  // GET /api/v1/datasources/:id
+  // GET /api/v1/datasources/:id (enriched with timeline, pipelines, anomalies)
   http.get(`${API_BASE}/datasources/:id`, ({ params }) => {
     const { id } = params;
     const ds = mockDataSources.find((d) => d.id === id);
@@ -235,8 +316,108 @@ export const datasourceHandlers = [
       );
     }
 
+    const today = new Date('2026-05-20');
+    const timeline = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - (29 - i));
+      const count = Math.floor(Math.random() * 5);
+      let maxSeverity: string | null = null;
+      if (count > 0) {
+        if (count >= 4) maxSeverity = 'critical';
+        else if (count >= 3) maxSeverity = 'high';
+        else if (count >= 2) maxSeverity = 'medium';
+        else maxSeverity = 'low';
+      }
+      return {
+        date: date.toISOString().split('T')[0],
+        count,
+        maxSeverity,
+      };
+    });
+
+    const activePipelines = mockPipelines
+      .filter((p: { data_source_id?: string; id: string; name: string; type: string; enabled: boolean }) => {
+        const pipe = p as Record<string, unknown>;
+        return pipe.data_source_id === id && pipe.enabled;
+      })
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        status: 'success' as string,
+        description: `Checks ${p.type} metrics at regular intervals`,
+      }));
+
+    if (activePipelines.length === 0) {
+      activePipelines.push(
+        {
+          id: 'pipe-uuid-detail-001',
+          name: 'volume orders',
+          type: 'volume',
+          status: 'success',
+          description: 'Checks row count of orders table every 1h',
+        },
+        {
+          id: 'pipe-uuid-detail-002',
+          name: 'null_check users',
+          type: 'null_check',
+          status: 'warning',
+          description: 'Checks null percentage in critical columns',
+        },
+        {
+          id: 'pipe-uuid-detail-003',
+          name: 'schema_change',
+          type: 'schema_change',
+          status: 'success',
+          description: 'Monitors schema changes across tables',
+        },
+      );
+    }
+
+    const recentAnomalies = [
+      {
+        id: 'anomaly-uuid-detail-001',
+        severity: 'critical',
+        type: 'null_check',
+        description: 'Null ratio 8.4% in orders.status',
+        detected_at: '2026-05-20T07:05:00Z',
+      },
+      {
+        id: 'anomaly-uuid-detail-002',
+        severity: 'high',
+        type: 'volume',
+        description: 'Volume 62% below baseline',
+        detected_at: '2026-05-20T09:30:00Z',
+      },
+      {
+        id: 'anomaly-uuid-detail-003',
+        severity: 'medium',
+        type: 'null_check',
+        description: 'Null ratio 3.2% in users.email',
+        detected_at: '2026-05-18T10:00:00Z',
+        resolved_at: '2026-05-18T15:00:00Z',
+      },
+      {
+        id: 'anomaly-uuid-detail-004',
+        severity: 'low',
+        type: 'volume',
+        description: 'Volume 12% above baseline',
+        detected_at: '2026-05-16T10:00:00Z',
+        resolved_at: '2026-05-16T12:00:00Z',
+      },
+    ];
+
     return HttpResponse.json(
-      { data: ds, error: null },
+      {
+        data: {
+          ...ds,
+          pipelines_count: activePipelines.length,
+          timeline,
+          active_pipelines: activePipelines,
+          recent_anomalies: recentAnomalies,
+        },
+        error: null,
+      },
       { status: 200 }
     );
   }),
@@ -414,6 +595,10 @@ let mockAgents: Array<{
   user_id: string;
   last_heartbeat_at: string | null;
   version: string | null;
+  host?: string | null;
+  data_sources_count?: number;
+  pipelines_count?: number;
+  agent_token?: string;
   created_at: string;
 }> = [
   {
@@ -421,8 +606,12 @@ let mockAgents: Array<{
     name: 'Production Agent',
     status: 'online',
     user_id: 'mock-user-uuid',
-    last_heartbeat_at: '2026-05-12T12:00:00Z',
-    version: '0.1.0',
+    last_heartbeat_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    version: '0.2.1',
+    host: 'prod-worker-01.internal',
+    data_sources_count: 3,
+    pipelines_count: 5,
+    agent_token: 'beacon_agent_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
     created_at: '2026-05-12T00:00:00Z',
   },
   {
@@ -430,9 +619,39 @@ let mockAgents: Array<{
     name: 'Staging Agent',
     status: 'offline',
     user_id: 'mock-user-uuid',
-    last_heartbeat_at: null,
+    last_heartbeat_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
     version: '0.1.0',
+    host: 'staging-02.internal',
+    data_sources_count: 1,
+    pipelines_count: 2,
+    agent_token: 'beacon_agent_x1y2z3w4v5u6t7s8r9q0p1o2n3m4l5k6',
     created_at: '2026-05-12T01:00:00Z',
+  },
+  {
+    id: 'agent-uuid-003',
+    name: 'Dev Agent',
+    status: 'online',
+    user_id: 'mock-user-uuid',
+    last_heartbeat_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    version: '0.3.0-beta',
+    host: 'dev-laptop.local',
+    data_sources_count: 2,
+    pipelines_count: 3,
+    agent_token: 'beacon_agent_d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4',
+    created_at: '2026-05-13T00:00:00Z',
+  },
+  {
+    id: 'agent-uuid-004',
+    name: 'Archived Legacy',
+    status: 'offline',
+    user_id: 'mock-user-uuid',
+    last_heartbeat_at: new Date(Date.now() - 120 * 60 * 60 * 1000).toISOString(),
+    version: '0.0.5',
+    host: 'old-server.deprecated',
+    data_sources_count: 0,
+    pipelines_count: 0,
+    agent_token: 'beacon_agent_k1j2h3g4f5d6s7a8p9o0i1u2y3t4r5e6',
+    created_at: '2026-04-01T00:00:00Z',
   },
 ];
 
@@ -482,6 +701,9 @@ export const agentHandlers = [
       user_id: 'mock-user-uuid',
       last_heartbeat_at: null,
       version: body.version || null,
+      host: body.host || null,
+      data_sources_count: 0,
+      pipelines_count: 0,
       created_at: '2026-05-12T12:00:00Z',
     };
 
