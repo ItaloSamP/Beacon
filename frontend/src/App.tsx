@@ -14,11 +14,12 @@ import { DataSourceDetailPage } from './features/datasources/DataSourceDetailPag
 import { DataSourceForm } from './features/datasources/DataSourceForm';
 import { AgentsListPage } from './features/agents/AgentsListPage';
 import { AgentForm } from './features/agents/AgentForm';
-import { PipelinesPlaceholder } from './features/pipelines/PipelinesPlaceholder';
+import { PipelinesListPage } from './features/pipelines/PipelinesListPage';
+import { PipelineForm } from './features/pipelines/PipelineForm';
 import { PipelineRunsPage } from './features/pipelines/PipelineRunsPage';
 import { AnomaliesListPage } from './features/anomalies/AnomaliesListPage';
 import { AnomalyDetailPage } from './features/anomalies/AnomalyDetailPage';
-import { AlertsPlaceholder } from './features/alerts/AlertsPlaceholder';
+import { AlertsListPage } from './features/alerts/AlertsListPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,11 +68,13 @@ export function App() {
               <Route path="/datasources/new" element={<DataSourceForm />} />
               <Route path="/datasources/:id/edit" element={<DataSourceForm />} />
               <Route path="/datasources/:id" element={<DataSourceDetailPage />} />
-              <Route path="/pipelines" element={<PipelinesPlaceholder />} />
+              <Route path="/pipelines" element={<PipelinesListPage />} />
+              <Route path="/pipelines/new" element={<PipelineForm />} />
+              <Route path="/pipelines/:id/edit" element={<PipelineForm />} />
               <Route path="/pipelines/:pipelineId/runs" element={<PipelineRunsPage />} />
               <Route path="/anomalies" element={<AnomaliesListPage />} />
               <Route path="/anomalies/:id" element={<AnomalyDetailPage />} />
-              <Route path="/alerts" element={<AlertsPlaceholder />} />
+              <Route path="/alerts" element={<AlertsListPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
