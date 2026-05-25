@@ -36,6 +36,7 @@ export interface DataSource {
   host?: string;
   last_profiled_at?: string;
   pipelines_count?: number;
+  active_anomalies?: number;
   created_at: string;
   updated_at: string;
   timeline?: DataSourceTimelineEntry[];

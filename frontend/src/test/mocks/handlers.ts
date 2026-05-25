@@ -177,6 +177,7 @@ let mockDataSources: Array<{
   connection_config: Record<string, unknown>;
   status: string;
   host: string | null;
+  active_anomalies: number;
   last_profiled_at: string | null;
   agent_id: string | null;
   agent: { id: string; name: string; status: string } | null;
@@ -190,6 +191,7 @@ let mockDataSources: Array<{
     connection_config: { host: 'prod.db.internal', port: 5432 },
     status: 'active',
     host: 'prod.db.internal',
+    active_anomalies: 0,
     last_profiled_at: '2026-05-20T10:00:00Z',
     agent_id: 'agent-uuid-001',
     agent: { id: 'agent-uuid-001', name: 'Production Agent', status: 'online' },
@@ -203,6 +205,7 @@ let mockDataSources: Array<{
     connection_config: { host: 'analytics.db.internal', port: 3306 },
     status: 'active',
     host: 'analytics.db.internal',
+    active_anomalies: 0,
     last_profiled_at: '2026-05-20T09:30:00Z',
     agent_id: 'agent-uuid-002',
     agent: { id: 'agent-uuid-002', name: 'Staging Agent', status: 'offline' },
@@ -216,6 +219,7 @@ let mockDataSources: Array<{
     connection_config: {},
     status: 'inactive',
     host: null,
+    active_anomalies: 0,
     last_profiled_at: null,
     agent_id: null,
     agent: null,
@@ -229,6 +233,7 @@ let mockDataSources: Array<{
     connection_config: { host: 'legacy.db.internal', port: 3306 },
     status: 'error',
     host: 'legacy.db.internal',
+    active_anomalies: 2,
     last_profiled_at: '2026-05-20T11:00:00Z',
     agent_id: 'agent-uuid-002',
     agent: { id: 'agent-uuid-002', name: 'Staging Agent', status: 'offline' },
@@ -287,6 +292,7 @@ export const datasourceHandlers = [
       connection_config: body.connection_config || {},
       status: body.status || 'active',
       host: ((body.connection_config as unknown) as Record<string, unknown> | undefined)?.host as string || null,
+      active_anomalies: 0,
       last_profiled_at: null,
       agent_id: body.agent_id || null,
       agent: body.agent_id
@@ -381,6 +387,8 @@ export const datasourceHandlers = [
         type: 'null_check',
         description: 'Null ratio 8.4% in orders.status',
         detected_at: '2026-05-20T07:05:00Z',
+        data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+        pipeline: { id: 'pipe-null-001', name: 'Orders Null Profiler' },
       },
       {
         id: 'anomaly-uuid-detail-002',
@@ -388,6 +396,8 @@ export const datasourceHandlers = [
         type: 'volume',
         description: 'Volume 62% below baseline',
         detected_at: '2026-05-20T09:30:00Z',
+        data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+        pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
       },
       {
         id: 'anomaly-uuid-detail-003',
@@ -396,6 +406,8 @@ export const datasourceHandlers = [
         description: 'Null ratio 3.2% in users.email',
         detected_at: '2026-05-18T10:00:00Z',
         resolved_at: '2026-05-18T15:00:00Z',
+        data_source: { id: 'ds-uuid-002', name: 'Analytics MySQL' },
+        pipeline: { id: 'pipe-null-002', name: 'Users Schema Scan' },
       },
       {
         id: 'anomaly-uuid-detail-004',
@@ -404,6 +416,8 @@ export const datasourceHandlers = [
         description: 'Volume 12% above baseline',
         detected_at: '2026-05-16T10:00:00Z',
         resolved_at: '2026-05-16T12:00:00Z',
+        data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+        pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
       },
     ];
 
@@ -500,8 +514,61 @@ let mockPipelines = [
     schedule: '0 6 * * *',
     config: { query: 'SELECT COUNT(*) FROM orders', threshold: 1000 },
     enabled: true,
+    status: 'healthy',
     created_at: '2026-05-12T00:00:00Z',
     updated_at: '2026-05-12T00:00:00Z',
+  },
+  {
+    id: 'pipe-uuid-002',
+    name: 'Null Check Users',
+    type: 'null_check',
+    data_source_id: 'ds-uuid-002',
+    data_source: { id: 'ds-uuid-002', name: 'Analytics MySQL' },
+    schedule: '0 */6 * * *',
+    config: { table: 'users', columns: ['email', 'phone'] },
+    enabled: true,
+    status: 'healthy',
+    created_at: '2026-05-12T01:00:00Z',
+    updated_at: '2026-05-12T01:00:00Z',
+  },
+  {
+    id: 'pipe-uuid-003',
+    name: 'Schema Change Monitor',
+    type: 'schema_change',
+    data_source_id: 'ds-uuid-001',
+    data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+    schedule: '0 0 * * *',
+    config: { track_ddl: true },
+    enabled: true,
+    status: 'warning',
+    created_at: '2026-05-13T00:00:00Z',
+    updated_at: '2026-05-13T00:00:00Z',
+  },
+  {
+    id: 'pipe-uuid-004',
+    name: 'Revenue Distribution',
+    type: 'distribution',
+    data_source_id: 'ds-uuid-002',
+    data_source: { id: 'ds-uuid-002', name: 'Analytics MySQL' },
+    schedule: '0 0 * * 0',
+    config: { metric: 'revenue', buckets: 10 },
+    enabled: true,
+    status: 'healthy',
+    created_at: '2026-05-12T02:00:00Z',
+    updated_at: '2026-05-12T02:00:00Z',
+  },
+  {
+    id: 'pipe-uuid-005',
+    name: 'Logs Volume Check',
+    type: 'volume',
+    data_source_id: 'ds-uuid-004',
+    data_source: { id: 'ds-uuid-004', name: 'Legacy MySQL (read-only)' },
+    schedule: '*/10 * * * *',
+    config: { query: 'SELECT COUNT(*) FROM logs' },
+    enabled: false,
+    status: 'paused',
+    created_at: '2026-05-11T00:00:00Z',
+    updated_at: '2026-05-11T00:00:00Z',
   },
 ];
 
@@ -528,6 +595,7 @@ export const pipelineHandlers = [
     const newPipe = {
       id: `pipe-uuid-${Date.now()}`,
       ...body,
+      status: (body as Record<string, unknown>).enabled ? 'healthy' : 'paused',
       created_at: '2026-05-12T12:00:00Z',
       updated_at: '2026-05-12T12:00:00Z',
     } as typeof mockPipelines[0];
@@ -568,6 +636,27 @@ export const pipelineHandlers = [
     const body = await request.json() as Record<string, unknown>;
     mockPipelines[index] = { ...mockPipelines[index], ...body, updated_at: '2026-05-12T13:00:00Z' };
     return HttpResponse.json({ data: mockPipelines[index], error: null }, { status: 200 });
+  }),
+
+  // POST /api/v1/pipelines/:id/toggle
+  http.post(`${API_BASE}/pipelines/:id/toggle`, ({ params }) => {
+    const index = mockPipelines.findIndex((p) => p.id === params.id);
+    if (index === -1) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Pipeline not found' },
+        { status: 404 }
+      );
+    }
+    mockPipelines[index] = {
+      ...mockPipelines[index],
+      enabled: !mockPipelines[index].enabled,
+      updated_at: new Date().toISOString(),
+    };
+
+    return HttpResponse.json(
+      { data: mockPipelines[index], error: null },
+      { status: 200 }
+    );
   }),
 
   // DELETE /api/v1/pipelines/:id
@@ -837,6 +926,82 @@ export const apiKeyHandlers = [
 ];
 
 // ============================================================
+// Alert handlers
+// ============================================================
+
+const mockAlerts: Array<{
+  id: string;
+  anomaly: { id: string; description: string };
+  channel: 'email' | 'slack';
+  status: 'sent' | 'failed' | 'pending';
+  sent_at: string | null;
+  recipient: string;
+}> = [
+  {
+    id: 'alert-uuid-001',
+    anomaly: { id: 'anomaly-uuid-001', description: 'Row count for public.orders decreased by 45%' },
+    channel: 'email',
+    status: 'sent',
+    sent_at: '2026-05-14T10:05:30Z',
+    recipient: 'ops@beacon.io',
+  },
+  {
+    id: 'alert-uuid-002',
+    anomaly: { id: 'anomaly-uuid-001', description: 'Row count for public.orders decreased by 45%' },
+    channel: 'slack',
+    status: 'pending',
+    sent_at: null,
+    recipient: '#alerts-production',
+  },
+  {
+    id: 'alert-uuid-003',
+    anomaly: { id: 'anomaly-uuid-002', description: 'Null percentage for public.users.email increased to 12%' },
+    channel: 'email',
+    status: 'failed',
+    sent_at: '2026-05-14T10:05:00Z',
+    recipient: 'devops@beacon.io',
+  },
+  {
+    id: 'alert-uuid-004',
+    anomaly: { id: 'anomaly-uuid-002', description: 'Null percentage for public.users.email increased to 12%' },
+    channel: 'slack',
+    status: 'sent',
+    sent_at: '2026-05-14T10:05:15Z',
+    recipient: '#eng-data',
+  },
+  {
+    id: 'alert-uuid-005',
+    anomaly: { id: 'anomaly-uuid-003', description: 'Row count for public.products increased by 15%' },
+    channel: 'email',
+    status: 'sent',
+    sent_at: '2026-05-13T10:05:30Z',
+    recipient: 'analytics@beacon.io',
+  },
+];
+
+export const alertHandlers = [
+  http.get(`${API_BASE}/alerts`, ({ request }) => {
+    const url = new URL(request.url);
+    const channel = url.searchParams.get('channel');
+    const status = url.searchParams.get('status');
+
+    let filtered = [...mockAlerts];
+
+    if (channel) {
+      filtered = filtered.filter((a) => a.channel === channel);
+    }
+    if (status) {
+      filtered = filtered.filter((a) => a.status === status);
+    }
+
+    return HttpResponse.json(
+      { data: filtered, meta: { total: filtered.length }, error: null },
+      { status: 200 },
+    );
+  }),
+];
+
+// ============================================================
 // Anomaly handlers
 // ============================================================
 
@@ -849,9 +1014,36 @@ let mockAnomalies: Array<{
   deviation_details: Record<string, unknown>;
   detected_at: string;
   resolved_at: string | null;
+  data_source: { id: string; name: string };
+  pipeline: { id: string; name: string };
+  recommendation?: string;
 }> = [
   {
     id: 'anomaly-uuid-001',
+    pipeline_run_id: 'prun-uuid-001',
+    severity: 'critical',
+    type: 'null_check',
+    description: 'Null rate spike detected in orders.user_id',
+    deviation_details: {
+      table: 'public.orders',
+      column: 'user_id',
+      metric: 'null_rate',
+      baseline_mean: 0.12,
+      baseline_stddev: 0.02,
+      current_value: 8.7,
+      z_score: 5.2,
+      threshold: 3.0,
+      rows_scanned: 142000,
+      affected_rows: 12400,
+    },
+    detected_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    resolved_at: null,
+    data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+    pipeline: { id: 'pipe-null-001', name: 'Orders Null Profiler' },
+    recommendation: 'Immediate action recommended: The orders.user_id column normally has 0.1% nulls but jumped to 8.7% in the last profiling window. This suggests a recent ETL change or upstream data pipeline failure. Check the ingestion pipeline for the orders table and verify if a JOIN or transformation is dropping user_id values.',
+  },
+  {
+    id: 'anomaly-uuid-002',
     pipeline_run_id: 'prun-uuid-001',
     severity: 'high',
     type: 'volume',
@@ -865,29 +1057,33 @@ let mockAnomalies: Array<{
       z_score: -4.2,
       threshold: 3.0,
     },
-    detected_at: '2026-05-14T10:05:00Z',
+    detected_at: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
     resolved_at: null,
-  },
-  {
-    id: 'anomaly-uuid-002',
-    pipeline_run_id: 'prun-uuid-001',
-    severity: 'medium',
-    type: 'null_check',
-    description: 'Null percentage for public.users.email increased to 12%',
-    deviation_details: {
-      table: 'public.users',
-      column: 'email',
-      baseline_mean: 0.02,
-      baseline_stddev: 0.01,
-      current_value: 0.12,
-      z_score: 3.5,
-      threshold: 3.0,
-    },
-    detected_at: '2026-05-14T10:05:00Z',
-    resolved_at: null,
+    data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+    pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
   },
   {
     id: 'anomaly-uuid-003',
+    pipeline_run_id: 'prun-uuid-002',
+    severity: 'medium',
+    type: 'schema_change',
+    description: 'Schema change: new column detected in public.orders',
+    deviation_details: {
+      table: 'public.orders',
+      metric: 'schema_hash',
+      baseline_hash: 'abc123def456',
+      current_hash: 'xyz789ghi012',
+      changes: ['column_added: discount_rate (numeric)'],
+      z_score: 3.8,
+      threshold: 3.0,
+    },
+    detected_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    resolved_at: null,
+    data_source: { id: 'ds-uuid-002', name: 'Analytics MySQL' },
+    pipeline: { id: 'pipe-schema-001', name: 'Schema Scan' },
+  },
+  {
+    id: 'anomaly-uuid-004',
     pipeline_run_id: 'prun-uuid-002',
     severity: 'low',
     type: 'volume',
@@ -903,6 +1099,28 @@ let mockAnomalies: Array<{
     },
     detected_at: '2026-05-13T10:05:00Z',
     resolved_at: '2026-05-14T08:00:00Z',
+    data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+    pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
+  },
+  {
+    id: 'anomaly-uuid-005',
+    pipeline_run_id: 'prun-uuid-001',
+    severity: 'low',
+    type: 'null_check',
+    description: 'Minor null increase in users.email',
+    deviation_details: {
+      table: 'public.users',
+      column: 'email',
+      baseline_mean: 0.02,
+      baseline_stddev: 0.01,
+      current_value: 0.04,
+      z_score: 2.0,
+      threshold: 3.0,
+    },
+    detected_at: '2026-05-12T10:05:00Z',
+    resolved_at: '2026-05-13T09:00:00Z',
+    data_source: { id: 'ds-uuid-002', name: 'Analytics MySQL' },
+    pipeline: { id: 'pipe-null-002', name: 'Users Schema Scan' },
   },
 ];
 
@@ -948,13 +1166,14 @@ export const anomalyHandlers = [
     }
 
     const total = filtered.length;
+    const activeCount = mockAnomalies.filter((a) => a.resolved_at === null).length;
     const start = (page - 1) * perPage;
     const pageData = filtered.slice(start, start + perPage);
 
     return HttpResponse.json(
       {
         data: pageData,
-        meta: { page, per_page: perPage, total },
+        meta: { page, per_page: perPage, total, active_count: activeCount },
         error: null,
       },
       { status: 200 }
@@ -973,29 +1192,61 @@ export const anomalyHandlers = [
       );
     }
 
+    const isFirst = mockAnomalies.indexOf(anomaly) === 0;
+
     const detail = {
       ...anomaly,
+      recommendation: anomaly.recommendation || 'Check the pipeline run logs and compare with the previous execution to identify the root cause of this deviation.',
       pipeline_run: {
         id: anomaly.pipeline_run_id,
-        pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
-        data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
-        status: 'success',
-        started_at: '2026-05-14T10:00:00Z',
-        finished_at: '2026-05-14T10:00:05Z',
+        pipeline: anomaly.pipeline,
+        data_source: anomaly.data_source,
+        status: isFirst ? 'warning' : 'success',
+        started_at: new Date(new Date(anomaly.detected_at).getTime() - 5 * 60 * 1000).toISOString(),
+        finished_at: new Date(new Date(anomaly.detected_at).getTime() - 60 * 1000).toISOString(),
+      },
+      deviation_details: {
+        ...anomaly.deviation_details,
+        ...(isFirst
+          ? {
+              table: 'public.orders',
+              columns_monitored: ['customer_id', 'payment_method'],
+              baseline_null_pct: { customer_id: 0.008, payment_method: 0.015 },
+              current_null_pct: { customer_id: 0.071, payment_method: 0.098 },
+              z_score: 5.2,
+              threshold: 3.0,
+              rows_scanned: 1245000,
+              pipeline_run_id: 'run_a4e8f9b2',
+            }
+          : {}),
       },
       alerts: [
         {
           id: 'alert-uuid-001',
           channel: 'email',
           status: 'sent',
-          sent_at: '2026-05-14T10:05:30Z',
+          sent_at: new Date(new Date(anomaly.detected_at).getTime() + 30 * 1000).toISOString(),
+          recipient: 'italo@empresa.com',
         },
         {
           id: 'alert-uuid-002',
           channel: 'slack',
-          status: 'pending',
-          sent_at: null,
+          status: 'sent',
+          sent_at: new Date(new Date(anomaly.detected_at).getTime() + 30 * 1000).toISOString(),
+          recipient: '#data-alerts',
         },
+        ...(isFirst
+          ? [
+              {
+                id: 'alert-uuid-003',
+                channel: 'email',
+                status: 'failed',
+                sent_at: null,
+                recipient: 'backup@empresa.com',
+                error_message: 'SMTP connection timeout',
+              },
+            ]
+          : []),
       ],
     };
 
@@ -1029,6 +1280,8 @@ export const anomalyHandlers = [
       deviation_details: (body.deviation_details as unknown as Record<string, unknown>) || {},
       detected_at: new Date().toISOString(),
       resolved_at: null,
+      data_source: { id: 'ds-uuid-001', name: 'Production PostgreSQL' },
+      pipeline: { id: 'pipe-uuid-001', name: 'Daily Volume Check' },
     };
 
     mockAnomalies.push(newAnomaly);
@@ -1211,6 +1464,23 @@ export const dashboardStatsHandlers = [
       { status: 200 }
     );
   }),
+
+  // GET /api/v1/datasources/health
+  http.get(`${API_BASE}/datasources/health`, () => {
+    return HttpResponse.json(
+      {
+        data: {
+          total: mockDataSources.length,
+          healthy: mockDataSources.filter((ds) => ds.status === 'active' && ds.active_anomalies === 0).length,
+          warning: mockDataSources.filter((ds) => ds.status === 'error').length,
+          error: 0,
+          offline: mockDataSources.filter((ds) => ds.status === 'inactive').length,
+        },
+        error: null,
+      },
+      { status: 200 }
+    );
+  }),
 ];
 
 // ============================================================
@@ -1280,6 +1550,7 @@ export const handlers = [
   ...pipelineHandlers,
   ...agentHandlers,
   ...apiKeyHandlers,
+  ...alertHandlers,
   ...anomalyHandlers,
   ...pipelineRunHandlers,
   ...agentTokenHandlers,
