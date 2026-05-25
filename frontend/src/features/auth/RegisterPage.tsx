@@ -77,7 +77,7 @@ export function RegisterPage() {
       <Card className="w-full max-w-[420px] p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Beacon</h1>
-          <p className="text-sm text-gray-500 mt-2">Create your account</p>
+          <p className="text-sm text-gray-500 mt-2">Start monitoring your data quality in under 5 minutes.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -143,10 +143,10 @@ export function RegisterPage() {
               <p className={`text-xs font-medium ${
                 passwordStrength <= 1 ? 'text-red-500' :
                 passwordStrength === 2 ? 'text-orange-400' :
-                passwordStrength === 3 ? 'text-yellow-500' :
-                'text-green-500'
+                passwordStrength === 3 ? 'text-yellow-600' :
+                'text-green-600'
               }`}>
-                {strengthLabels[passwordStrength]}
+                ● Password strength: {strengthLabels[passwordStrength]}
               </p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1">
                 <Requirement met={password.length >= 8} label="8+ characters" />

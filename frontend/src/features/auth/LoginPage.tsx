@@ -47,7 +47,7 @@ export function LoginPage() {
       <Card className="w-full max-w-[420px] p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Beacon</h1>
-          <p className="text-sm text-gray-500 mt-2">Sign in to your account</p>
+          <p className="text-sm text-gray-500 mt-2">Your data's silent guardian. Sign in to monitor data quality.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -105,16 +105,10 @@ export function LoginPage() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Don&apos;t have an account?{' '}
-          <Link to="/register" className="text-primary hover:underline font-medium">
-            Register
-          </Link>
-        </p>
-
-        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-          <a href="#" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+          <a href="#" className="text-primary hover:underline font-medium">
             Contact sales
           </a>
-        </div>
+        </p>
       </Card>
     </div>
   );

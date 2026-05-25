@@ -209,7 +209,7 @@ export function DashboardPage() {
                   <span className="font-normal text-gray-400 mx-0.5">/</span>
                   {health.total}
                 </div>
-                <div className="text-sm font-medium text-gray-500 mt-1">Data sources healthy</div>
+                <div className="text-sm font-medium text-gray-500 mt-1">data sources saudaveis</div>
               </div>
               <div className="flex-1 min-w-[120px]">
                 <HealthIndicator

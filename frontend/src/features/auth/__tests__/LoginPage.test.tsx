@@ -86,11 +86,11 @@ describe('LoginPage', () => {
       expect(heading).toBeInTheDocument();
     });
 
-    it('should have a link to register page', () => {
+    it('should have a contact sales link', () => {
       renderLoginPage();
 
-      const registerLink = screen.getByRole('link', { name: /registrar|cadastrar|create account|register/i });
-      expect(registerLink).toBeInTheDocument();
+      const salesLink = screen.getByRole('link', { name: /contact sales/i });
+      expect(salesLink).toBeInTheDocument();
     });
   });
 
