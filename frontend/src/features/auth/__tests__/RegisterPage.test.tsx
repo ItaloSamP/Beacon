@@ -68,8 +68,15 @@ describe('RegisterPage', () => {
     it('should render password input field', () => {
       renderRegisterPage();
 
-      const passwordInput = screen.getByLabelText(/password/i) || screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByLabelText('Password');
       expect(passwordInput).toBeInTheDocument();
+    });
+
+    it('should render confirm password input field', () => {
+      renderRegisterPage();
+
+      const confirmInput = screen.getByLabelText(/confirm password/i);
+      expect(confirmInput).toBeInTheDocument();
     });
 
     it('should render a submit button', () => {
@@ -105,27 +112,29 @@ describe('RegisterPage', () => {
       const submitButton = screen.getByRole('button', { name: /create account|criar conta|register/i });
       await userEvent.click(submitButton);
 
-      // When all fields are empty, the component shows "All fields are required"
-      const errorMessage = await screen.findByText(/all fields are required/i);
+      // When all fields are empty, the component shows validation error
+      const errorMessage = await screen.findByText(/required fields must be filled/i);
       expect(errorMessage).toBeInTheDocument();
     });
 
-    it('should show error for password shorter than 6 characters', async () => {
+    it('should show error for weak password', async () => {
       renderRegisterPage();
 
-      const nameInput = screen.getByLabelText(/name/i) || screen.getByPlaceholderText(/name/i);
+      const nameInput = screen.getByLabelText(/full name/i) || screen.getByLabelText(/name/i);
       const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i) || screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByLabelText('Password');
+      const confirmInput = screen.getByLabelText(/confirm password/i);
 
       await userEvent.type(nameInput, 'Test User');
       await userEvent.type(emailInput, 'test@example.com');
       await userEvent.type(passwordInput, '12345');
+      await userEvent.type(confirmInput, '12345');
 
       const submitButton = screen.getByRole('button', { name: /create account|criar conta|register/i });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        const errorMessage = screen.getByText(/at least 6|6 characters/i);
+        const errorMessage = screen.getByText(/must meet all requirements/i);
         expect(errorMessage).toBeInTheDocument();
       });
     });
@@ -138,13 +147,15 @@ describe('RegisterPage', () => {
     it('should call register API on form submit with valid data', async () => {
       renderRegisterPage();
 
-      const nameInput = screen.getByLabelText(/name/i) || screen.getByPlaceholderText(/name/i);
+      const nameInput = screen.getByLabelText(/full name/i) || screen.getByLabelText(/name/i);
       const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i) || screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByLabelText('Password');
+      const confirmInput = screen.getByLabelText(/confirm password/i);
 
       await userEvent.type(nameInput, 'Test User');
       await userEvent.type(emailInput, 'newuser@example.com');
       await userEvent.type(passwordInput, 'TestPassword123!');
+      await userEvent.type(confirmInput, 'TestPassword123!');
 
       const submitButton = screen.getByRole('button', { name: /create account|criar conta|register/i });
       await userEvent.click(submitButton);
@@ -159,21 +170,22 @@ describe('RegisterPage', () => {
     it('should show error on duplicate email (409 conflict)', async () => {
       renderRegisterPage();
 
-      const nameInput = screen.getByLabelText(/name/i) || screen.getByPlaceholderText(/name/i);
+      const nameInput = screen.getByLabelText(/full name/i) || screen.getByLabelText(/name/i);
       const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i) || screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByLabelText('Password');
+      const confirmInput = screen.getByLabelText(/confirm password/i);
 
       // "existing@example.com" triggers 409 conflict in MSW mock
       await userEvent.type(nameInput, 'Existing User');
       await userEvent.type(emailInput, 'existing@example.com');
       await userEvent.type(passwordInput, 'TestPassword123!');
+      await userEvent.type(confirmInput, 'TestPassword123!');
 
       const submitButton = screen.getByRole('button', { name: /create account|criar conta|register/i });
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        // MSW mock returns "Email already registered" for existing@example.com
-        const errorMsg = screen.queryByText(/email already registered|already registered/i);
+        const errorMsg = screen.getByRole('alert');
         expect(errorMsg).toBeInTheDocument();
       });
     });
@@ -186,9 +198,9 @@ describe('RegisterPage', () => {
     it('should have accessible labels on all inputs', () => {
       renderRegisterPage();
 
-      const nameInput = screen.getByLabelText(/name/i) || screen.getByPlaceholderText(/name/i);
+      const nameInput = screen.getByLabelText(/full name/i) || screen.getByLabelText(/name/i);
       const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i) || screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByLabelText('Password');
 
       expect(nameInput).toBeInTheDocument();
       expect(emailInput).toBeInTheDocument();
@@ -198,18 +210,29 @@ describe('RegisterPage', () => {
     it('should be keyboard navigable', async () => {
       renderRegisterPage();
 
-      const nameInput = screen.getByLabelText(/name/i) || screen.getByPlaceholderText(/name/i);
+      const nameInput = screen.getByLabelText(/full name/i) || screen.getByLabelText(/name/i);
       nameInput.focus();
       expect(nameInput).toHaveFocus();
 
       await userEvent.tab();
-      const emailInput = screen.getByLabelText(/email/i) || screen.getByPlaceholderText(/email/i);
+      const companyInput = screen.getByLabelText(/company/i);
+      expect(companyInput).toHaveFocus();
+
+      await userEvent.tab();
+      const emailInput = screen.getByLabelText(/email/i);
       expect(emailInput).toHaveFocus();
 
       await userEvent.tab();
-      const passwordInput = screen.getByLabelText(/password/i) || screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByLabelText('Password');
       expect(passwordInput).toHaveFocus();
 
+      await userEvent.tab();
+      const confirmInput = screen.getByLabelText(/confirm password/i);
+      expect(confirmInput).toHaveFocus();
+
+      await userEvent.tab();
+      await userEvent.tab(); // skip checkbox + Terms link
+      await userEvent.tab(); // skip Privacy link
       await userEvent.tab();
       const submitButton = screen.getByRole('button', { name: /create account|criar conta|register/i });
       expect(submitButton).toHaveFocus();
