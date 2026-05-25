@@ -3,6 +3,25 @@ import type { User, Tokens } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import { api, setTokens, clearTokens } from '../lib/api';
 
+const USER_STORAGE_KEY = 'beacon_user';
+
+function loadUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUser(user: User) {
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+}
+
+function clearUser() {
+  localStorage.removeItem(USER_STORAGE_KEY);
+}
+
 interface AuthContextType {
   user: User | null;
   tokens: Tokens | null;
@@ -18,7 +37,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(loadUser);
   const [tokens, setTokensState] = useState<Tokens | null>(() => {
     const access = localStorage.getItem('access_token');
     const refresh = localStorage.getItem('refresh_token');
@@ -40,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           refreshToken: response.data.refresh_token,
         });
         setUser(response.data.user);
+        saveUser(response.data.user);
       }
     } catch (error) {
       throw error;
@@ -50,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     clearTokens();
+    clearUser();
     setUser(null);
     setTokensState(null);
   }, []);
@@ -65,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           refreshToken: response.data.refresh_token,
         });
         setUser(response.data.user);
+        saveUser(response.data.user);
       }
     } catch (error) {
       throw error;
@@ -84,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     user,
     tokens,
-    isAuthenticated: !!user,
+    isAuthenticated: !!tokens && !!user,
     isLoading,
     login,
     logout,
