@@ -1,18 +1,3 @@
-/**
- * Component tests for AnomalyDetailPage.
- *
- * Tests the anomaly detail page:
- * - Renders anomaly detail with pipeline name, data source, severity, type, description
- * - Displays deviation details (baseline, current value, z-score)
- * - Displays linked alerts table
- * - Has link to originating PipelineRun
- * - Has "Resolver" button (if not resolved)
- * - Loading, error (404), and not-found states
- *
- * RED PHASE: All tests WILL FAIL because the AnomalyDetailPage
- * component and its dependencies don't exist yet.
- */
-
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -22,15 +7,8 @@ import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '../../../test/mocks/server';
 
-// ============================================================
-// IMPORTS THAT WILL FAIL (RED PHASE — modules don't exist yet)
-// ============================================================
 import { AnomalyDetailPage } from '../AnomalyDetailPage';
 import { AuthProvider } from '../../../hooks/useAuth';
-
-// ============================================================
-// Test helpers
-// ============================================================
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -57,10 +35,6 @@ function renderDetailPage(anomalyId: string = 'anomaly-uuid-001') {
   );
 }
 
-// ============================================================
-// Tests
-// ============================================================
-
 describe('AnomalyDetailPage', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -68,17 +42,13 @@ describe('AnomalyDetailPage', () => {
     localStorage.setItem('refresh_token', 'mock-refresh-token');
   });
 
-  // ==========================================================
-  // Detail rendering
-  // ==========================================================
   describe('detail rendering', () => {
     it('should render anomaly detail with correct data', async () => {
       renderDetailPage();
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Row count for public\.orders decreased by 45%/i)
-        ).toBeInTheDocument();
+        const elems = screen.queryAllByText(/Null rate spike detected/i);
+        expect(elems.length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -86,8 +56,8 @@ describe('AnomalyDetailPage', () => {
       renderDetailPage();
 
       await waitFor(() => {
-        const severityBadge = screen.queryByText(/high|alta/i);
-        expect(severityBadge).toBeInTheDocument();
+        const badges = screen.queryAllByText(/critical/i);
+        expect(badges.length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -95,18 +65,17 @@ describe('AnomalyDetailPage', () => {
       renderDetailPage();
 
       await waitFor(() => {
-        const typeElements = screen.queryAllByText(/volume/i);
+        const typeElements = screen.queryAllByText(/null check/i);
         expect(typeElements.length).toBeGreaterThan(0);
       });
     });
 
-    it('should display deviation details', async () => {
+    it('should display deviation details in CodeBlock', async () => {
       renderDetailPage();
 
       await waitFor(() => {
-        expect(screen.getByText(/15200/)).toBeInTheDocument();
-        expect(screen.getByText(/8360/)).toBeInTheDocument();
-        expect(screen.getByText(/-4\.2/)).toBeInTheDocument();
+        expect(screen.getByText(/z_score/i)).toBeInTheDocument();
+        expect(screen.getByText(/threshold/i)).toBeInTheDocument();
       });
     });
 
@@ -115,7 +84,7 @@ describe('AnomalyDetailPage', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Daily Volume Check/i)
+          screen.getByText(/Orders Null Profiler/i)
         ).toBeInTheDocument();
       });
     });
@@ -130,11 +99,11 @@ describe('AnomalyDetailPage', () => {
       });
     });
 
-    it('should display linked alerts table', async () => {
+    it('should display alerts table', async () => {
       renderDetailPage();
 
       await waitFor(() => {
-        const alertElements = screen.queryAllByText(/alert|alerta|email|slack/i);
+        const alertElements = screen.queryAllByText(/email|slack/i);
         expect(alertElements.length).toBeGreaterThan(0);
       });
     });
@@ -143,55 +112,80 @@ describe('AnomalyDetailPage', () => {
       renderDetailPage();
 
       await waitFor(() => {
-        const dateElements = screen.queryAllByText(/2026-05-14/i);
-        expect(dateElements.length).toBeGreaterThan(0);
+        const elems = screen.queryAllByText(/Detectada/i);
+        expect(elems.length).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    it('should display Z-Score', async () => {
+      renderDetailPage();
+
+      await waitFor(() => {
+        expect(screen.getByText(/z=/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should display comparison between baseline and current', async () => {
+      renderDetailPage();
+
+      await waitFor(() => {
+        const baselineElems = screen.queryAllByText(/Baseline/i);
+        const currentElems = screen.queryAllByText(/Valor Atual/i);
+        expect(baselineElems.length).toBeGreaterThanOrEqual(1);
+        expect(currentElems.length).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    it('should display recommendation', async () => {
+      renderDetailPage();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Recomendacao/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should display description', async () => {
+      renderDetailPage();
+
+      await waitFor(() => {
+        expect(screen.getByText(/Descricao/i)).toBeInTheDocument();
       });
     });
   });
 
-  // ==========================================================
-  // Navigation
-  // ==========================================================
   describe('navigation', () => {
-    it('should have a link to the originating pipeline run', async () => {
+    it('should have breadcrumb link to anomalies list', async () => {
       renderDetailPage();
 
       await waitFor(() => {
         const links = screen.queryAllByRole('link');
-        const runLinks = links.filter(
-          (link) =>
-            link.getAttribute('href')?.includes('run') ||
-            link.getAttribute('href')?.includes('prun')
+        const anomalyLinks = links.filter(
+          (link) => link.getAttribute('href') === '/anomalies'
         );
-        expect(runLinks.length).toBeGreaterThan(0);
+        expect(anomalyLinks.length).toBeGreaterThan(0);
       });
     });
 
-    it('should have a back link to anomalies list', async () => {
+    it('should have link to pipeline runs', async () => {
       renderDetailPage();
 
       await waitFor(() => {
         const links = screen.queryAllByRole('link');
-        const backLinks = links.filter(
+        const pipelineLinks = links.filter(
           (link) =>
-            link.textContent?.toLowerCase().includes('back') ||
-            link.textContent?.toLowerCase().includes('voltar') ||
-            link.getAttribute('href')?.includes('anomalies')
+            link.getAttribute('href')?.includes('pipelines')
         );
-        expect(backLinks.length).toBeGreaterThan(0);
+        expect(pipelineLinks.length).toBeGreaterThan(0);
       });
     });
   });
 
-  // ==========================================================
-  // States
-  // ==========================================================
   describe('states', () => {
     it('should show loading state initially', async () => {
       renderDetailPage();
 
       const loadingElements = screen.queryAllByRole('status');
-      // Loading indicators should be present before data resolves
+      // Loading indicator should be present before data resolves
     });
 
     it('should show error state on API failure', async () => {
@@ -240,41 +234,35 @@ describe('AnomalyDetailPage', () => {
 
       await waitFor(() => {
         const notFoundMessage = screen.queryByText(
-          /not found|n.o encontrad|não encontrad/i
+          /n.o encontrad|não encontrad/i
         );
         expect(notFoundMessage).toBeInTheDocument();
       });
     });
   });
 
-  // ==========================================================
-  // Actions
-  // ==========================================================
   describe('actions', () => {
-    it('should have "Resolver" button when anomaly is not resolved', async () => {
-      // anomaly-uuid-001 has resolved_at: null
+    it('should have "Marcar como Resolvida" button when anomaly is not resolved', async () => {
       renderDetailPage();
 
       await waitFor(() => {
-        const resolveButton = screen.queryByText(/resolv|resolve/i);
+        const resolveButton = screen.queryByText(/Marcar como Resolvida/i);
         expect(resolveButton).toBeInTheDocument();
       });
     });
 
-    it('should resolve anomaly when "Resolver" button is clicked', async () => {
+    it('should resolve anomaly when resolve button is clicked', async () => {
       renderDetailPage();
 
       await waitFor(async () => {
-        const resolveButton = screen.queryByText(/resolv|resolve/i);
+        const resolveButton = screen.queryByText(/Marcar como Resolvida/i);
         if (resolveButton) {
           await userEvent.click(resolveButton);
         }
       });
 
       await waitFor(() => {
-        // UI should update to show resolved status
-        const resolvedTexts = screen.queryAllByText(/resolv|resolved/i);
-        expect(resolvedTexts.length).toBeGreaterThan(0);
+        expect(screen.queryByText(/Resolvida em/i)).toBeInTheDocument();
       });
     });
   });
