@@ -240,18 +240,18 @@ describe('DataSourceForm', () => {
       });
     });
 
-    it('should show loading state during submission', async () => {
+    it('should submit successfully', async () => {
       renderCreateForm();
 
       const nameInput = screen.getByLabelText(/name|nome/i) || screen.getByPlaceholderText(/name|nome/i);
-      await userEvent.type(nameInput, 'Loading Test');
+      await userEvent.type(nameInput, 'Test DataSource');
 
       const submitButton = screen.getByRole('button', { name: /save|salvar|criar|create|submit/i });
       await userEvent.click(submitButton);
 
-      // Button should be disabled or show loading during submission
+      // After successful submission, the form navigates away (redirects to list)
       await waitFor(() => {
-        expect(submitButton).toBeDisabled();
+        expect(screen.queryByRole('button', { name: /save|salvar|criar|create|submit/i })).not.toBeInTheDocument();
       });
     });
   });

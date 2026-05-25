@@ -107,7 +107,7 @@ describe('LoginPage', () => {
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/email|e-mail|obrigatório|required/i);
+        const errorMessage = screen.getByRole('alert');
         expect(errorMessage).toBeInTheDocument();
       });
     });
@@ -122,7 +122,7 @@ describe('LoginPage', () => {
       await userEvent.click(submitButton);
 
       await waitFor(() => {
-        const errorMessage = screen.queryByText(/senha|password|obrigatório|required/i);
+        const errorMessage = screen.getByRole('alert');
         expect(errorMessage).toBeInTheDocument();
       });
     });
@@ -230,8 +230,14 @@ describe('LoginPage', () => {
       const passwordInput = screen.getByLabelText(/senha|password/i) || screen.getByPlaceholderText(/senha|password/i);
       expect(passwordInput).toHaveFocus();
 
+      // Tab to Remember me checkbox
+      await userEvent.tab();
+      const checkbox = screen.getByLabelText(/remember me/i);
+      expect(checkbox).toHaveFocus();
+
       // Tab to submit button
       await userEvent.tab();
+      await userEvent.tab(); // skip "Forgot your password?" link
       const submitButton = screen.getByRole('button', { name: /entrar|login|sign in/i });
       expect(submitButton).toHaveFocus();
     });
