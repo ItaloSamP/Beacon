@@ -58,6 +58,16 @@ def _handle_config(config, mask: bool) -> dict | str:
     return config or {}
 
 
+@router.get("/health")
+async def get_datasources_health(
+    db: AsyncSession = Depends(get_db),
+    _user: dict = Depends(require_auth),
+):
+    repo = DataSourceRepository(db)
+    health = await repo.get_health_counts()
+    return ApiResponse(data=health, error=None)
+
+
 @router.get("")
 async def list_datasources(
     page: int = Query(1, ge=1),

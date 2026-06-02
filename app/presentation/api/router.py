@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.presentation.api.routes import health, auth, datasources, pipelines, api_keys, agents, pipeline_runs, anomalies
+from app.presentation.api.routes import health, auth, datasources, pipelines, api_keys, agents, pipeline_runs, anomalies, alerts
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(health.router, tags=["health"])
@@ -12,3 +12,4 @@ router.include_router(pipelines.router, tags=["pipelines"])
 router.include_router(api_keys.router, tags=["api_keys"])
 router.include_router(pipeline_runs.router, tags=["pipeline-runs"])
 router.include_router(anomalies.router, tags=["anomalies"])
+router.include_router(alerts.router, tags=["alerts"])

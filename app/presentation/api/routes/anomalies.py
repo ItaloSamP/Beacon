@@ -65,9 +65,16 @@ async def list_anomalies(
     )
     data_list = [_serialize_anomaly(a) for a in result["data"]]
 
+    active_count = await service.anomaly_repo.count_unresolved()
+
     return PaginatedApiResponse(
         data=data_list,
-        meta={"page": page, "per_page": per_page, "total": result["total"]},
+        meta={
+            "page": page,
+            "per_page": per_page,
+            "total": result["total"],
+            "active_count": active_count,
+        },
         error=None,
     )
 

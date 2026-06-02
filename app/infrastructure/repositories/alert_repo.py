@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
+from sqlalchemy.orm import joinedload
 
-from app.domain.models import Alert, AlertStatus
+from app.domain.models import Alert, AlertStatus, Anomaly
 
 
 class AlertRepository:
@@ -19,6 +20,16 @@ class AlertRepository:
     async def get_by_id(self, alert_id: str) -> Alert | None:
         result = await self.db.execute(select(Alert).where(Alert.id == alert_id))
         return result.scalar_one_or_none()
+
+    async def list_all(self, channel: str | None = None, status: str | None = None) -> list[Alert]:
+        query = select(Alert).options(joinedload(Alert.anomaly))
+        if channel:
+            query = query.where(Alert.channel == channel)
+        if status:
+            query = query.where(Alert.status == status)
+        query = query.order_by(Alert.sent_at.desc().nulls_last())
+        result = await self.db.execute(query)
+        return list(result.unique().scalars().all())
 
     async def list_by_anomaly(self, anomaly_id: str) -> list[Alert]:
         result = await self.db.execute(

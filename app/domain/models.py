@@ -152,6 +152,8 @@ class Alert(Base):
     status = Column(SAEnum(AlertStatus), nullable=False, default=AlertStatus.sent)
     error_message = Column(String(500), nullable=True)
 
+    anomaly = relationship("Anomaly")
+
 
 class AlertRule(Base):
     __tablename__ = "alert_rules"

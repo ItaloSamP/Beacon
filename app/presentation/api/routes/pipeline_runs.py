@@ -107,6 +107,18 @@ async def list_pipeline_runs(
     )
 
 
+@router.get("/pipeline-runs/recent")
+async def list_recent_runs(
+    limit: int = Query(10, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    _user: dict = Depends(require_auth),
+):
+    repo = PipelineRunRepository(db)
+    runs = await repo.list_recent(limit=limit)
+    data_list = [_serialize_pipeline_run(r) for r in runs]
+    return ApiResponse(data=data_list, error=None)
+
+
 @router.get("/pipeline-runs/{run_id}")
 async def get_pipeline_run(
     run_id: UUID,
@@ -118,15 +130,3 @@ async def get_pipeline_run(
     if not run:
         raise NotFoundException("Pipeline run not found")
     return ApiResponse(data=_serialize_pipeline_run(run), error=None)
-
-
-@router.get("/pipeline-runs/recent")
-async def list_recent_runs(
-    limit: int = Query(10, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-    _user: dict = Depends(require_auth),
-):
-    repo = PipelineRunRepository(db)
-    runs = await repo.list_recent(limit=limit)
-    data_list = [_serialize_pipeline_run(r) for r in runs]
-    return ApiResponse(data=data_list, error=None)

@@ -137,6 +137,22 @@ async def update_pipeline(
     )
 
 
+@router.post("/{id}/toggle")
+async def toggle_pipeline(
+    id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _user: dict = Depends(require_auth),
+):
+    service = PipelineService(PipelineRepository(db))
+    pipeline = await service.get_by_id(id)
+    pipeline.enabled = not pipeline.enabled
+    updated = await service.update(id, {"enabled": pipeline.enabled})
+    return ApiResponse(
+        data=_serialize_pipeline(updated),
+        error=None,
+    )
+
+
 @router.delete("/{id}", status_code=204)
 async def delete_pipeline(
     id: UUID,
