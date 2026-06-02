@@ -10,6 +10,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { api } from '../../lib/api';
 import type { Pipeline, PipelineType } from '../../types/pipeline';
 import type { DataSource } from '../../types/datasource';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import type { ApiResponse, PaginatedResponse } from '../../types/api';
 
 const TYPE_OPTIONS = [
@@ -40,6 +41,8 @@ export function PipelineForm() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+
+  useSetPageHeader(isEdit ? 'Edit Pipeline' : 'Create Pipeline');
 
   const [name, setName] = useState('');
   const [type, setType] = useState<PipelineType>('volume');
@@ -120,18 +123,14 @@ export function PipelineForm() {
 
   if (isEdit && isLoading) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold mb-6">Edit Pipeline</h1>
-        <div className="flex items-center justify-center h-64">
-          <Spinner size="lg" />
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Edit Pipeline' : 'Create Pipeline'}</h1>
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

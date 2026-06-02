@@ -11,6 +11,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorPanel } from '../../components/ui/ErrorPanel';
 import { api } from '../../lib/api';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import type { Agent } from '../../types/agent';
 import type { PaginatedResponse } from '../../types/api';
 import {
@@ -86,13 +87,24 @@ export function AgentsListPage() {
     }
   }, []);
 
+  const headerActions = (
+    <div className="flex items-center gap-3">
+      <SearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search agents..."
+        className="w-64"
+      />
+      <Button onClick={() => navigate('/agents/new')}>
+        <Plus size={16} className="mr-1" />New Agent
+      </Button>
+    </div>
+  );
+  useSetPageHeader('Agents', headerActions);
+
   if (isLoading) {
     return (
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Agents</h1>
-          <Skeleton variant="rectangular" width="160px" height="36px" />
-        </div>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} padding="none">
@@ -130,9 +142,6 @@ export function AgentsListPage() {
   if (isError) {
     return (
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Agents</h1>
-        </div>
         <ErrorPanel
           message={error instanceof Error ? error.message : 'Failed to load agents.'}
           onRetry={() => queryClient.invalidateQueries({ queryKey: ['agents'] })}
@@ -153,20 +162,6 @@ export function AgentsListPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Agents</h1>
-        <div className="flex items-center gap-3">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search agents..."
-            className="w-64"
-          />
-          <Button onClick={() => navigate('/agents/new')}>
-            <Plus size={16} className="mr-2" /> Register New Agent
-          </Button>
-        </div>
-      </div>
 
       <div className="flex items-center gap-6 mb-6 text-sm text-gray-600">
         <div className="flex items-center gap-2">

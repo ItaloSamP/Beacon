@@ -7,6 +7,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { Table } from '../../components/ui/Table';
 import { api } from '../../lib/api';
 import type { PipelineRun, PipelineRunTriggerResponse } from '../../types/pipeline_run';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import { ArrowLeft, Play } from 'lucide-react';
 
 function statusVariant(status: string) {
@@ -55,6 +56,8 @@ export function PipelineRunsPage() {
   const runs = data?.data ?? [];
   const pipelineName = runs.length > 0 ? runs[0].pipeline?.name : `Pipeline ${pipelineId}`;
 
+  useSetPageHeader(pipelineName ? `${pipelineName} — Runs` : 'Pipeline Runs');
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -87,7 +90,6 @@ export function PipelineRunsPage() {
       </Link>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{pipelineName} — Runs</h1>
         <Button
           onClick={() => runMutation.mutate()}
           loading={runMutation.isPending}

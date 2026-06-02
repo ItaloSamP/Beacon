@@ -11,6 +11,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorPanel } from '../../components/ui/ErrorPanel';
 import { Recommendation } from '../../components/ui/Recommendation';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import { api } from '../../lib/api';
 import type { AnomalyListResponse, AnomalyListItem } from '../../types/anomaly';
 import { AlertTriangle, CheckCircle, ChevronRight } from 'lucide-react';
@@ -81,10 +82,11 @@ export function AnomaliesListPage() {
     [anomalies],
   );
 
+  useSetPageHeader('Anomalies');
+
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Anomalies</h1>
         <div className="flex border-b border-border mb-6">
           <div className="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary -mb-px">
             All Anomalies
@@ -106,7 +108,6 @@ export function AnomaliesListPage() {
   if (isError) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Anomalies</h1>
         <ErrorPanel
           message={(error as Error)?.message || 'Failed to load anomalies'}
           onRetry={() => queryClient.invalidateQueries({ queryKey: ['anomalies'] })}
@@ -117,8 +118,6 @@ export function AnomaliesListPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Anomalies</h1>
-
       <Tabs defaultActive={tab} onChange={(id) => setTab(id)}>
         <Tabs.List>
           <Tabs.Tab id="all">All Anomalies</Tabs.Tab>

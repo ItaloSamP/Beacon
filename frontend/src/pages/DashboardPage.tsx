@@ -4,12 +4,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { StatusDot } from '../components/ui/StatusDot';
+import { Spinner } from '../components/ui/Spinner';
+import { Table } from '../components/ui/Table';
 import { HealthIndicator } from '../components/ui/HealthIndicator';
+import { StatusDot } from '../components/ui/StatusDot';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorPanel } from '../components/ui/ErrorPanel';
 import { api } from '../lib/api';
+import { useSetPageHeader } from '../components/layout/PageHeaderContext';
 import type { PaginatedResponse } from '../types/api';
 import type { DataSource } from '../types/datasource';
 import type { Anomaly } from '../types/anomaly';
@@ -165,16 +168,15 @@ export function DashboardPage() {
     return 'border-l-green-500';
   }, [health]);
 
+  const headerActions = (
+    <Link to="/datasources/new">
+      <Button size="sm"><Plus size={16} className="mr-1" />Novo Data Source</Button>
+    </Link>
+  );
+  useSetPageHeader('Dashboard', headerActions);
+
   return (
     <div data-testid="dashboard">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
-        <Link to="/datasources/new">
-          <Button size="sm">
-            <Plus size={16} className="mr-1" />+ Novo Data Source
-          </Button>
-        </Link>
-      </div>
 
       <section aria-label="Health indicator" className="mb-8">
         {healthLoading ? (

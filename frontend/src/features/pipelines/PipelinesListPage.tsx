@@ -9,6 +9,7 @@ import { Toggle } from '../../components/ui/Toggle';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorPanel } from '../../components/ui/ErrorPanel';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import { api } from '../../lib/api';
 import type { Pipeline, PipelineStatus } from '../../types/pipeline';
 import type { PaginatedResponse } from '../../types/api';
@@ -95,10 +96,25 @@ export function PipelinesListPage() {
     return pipelines.filter((p) => p.name.toLowerCase().includes(q));
   }, [pipelines, searchQuery]);
 
+  const headerActions = (
+    <>
+      <SearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search pipelines..."
+        aria-label="Search pipelines"
+        className="w-64"
+      />
+      <Button onClick={() => navigate('/pipelines/new')}>
+        <Plus size={16} className="mr-1" />New Pipeline
+      </Button>
+    </>
+  );
+  useSetPageHeader('Pipelines', headerActions);
+
   if (isError) {
     return (
       <div>
-        <h1 className="text-xl font-semibold mb-4">Pipelines</h1>
         <ErrorPanel
           message={error instanceof Error ? error.message : 'Failed to load pipelines.'}
           onRetry={() => queryClient.invalidateQueries({ queryKey: ['pipelines'] })}
@@ -109,22 +125,6 @@ export function PipelinesListPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Pipelines</h1>
-        <div className="flex items-center gap-3">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search pipelines..."
-            aria-label="Search pipelines"
-            className="w-64"
-          />
-          <Button onClick={() => navigate('/pipelines/new')}>
-            <Plus size={16} className="mr-2" />+ New Pipeline
-          </Button>
-        </div>
-      </div>
-
       {isLoading ? (
         <Card className="p-6">
           <div className="flex flex-col gap-2">
