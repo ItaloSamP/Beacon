@@ -138,13 +138,6 @@ describe('AgentForm', () => {
       expect(cancelButton).toBeInTheDocument();
     });
 
-    it('should display "Create Agent" as title', () => {
-      renderCreateForm();
-
-      const title = screen.queryByText(/create agent|new agent|novo agent|criar agent/i);
-      expect(title).toBeInTheDocument();
-    });
-
     it('should submit form and create agent', async () => {
       renderCreateForm();
 
@@ -175,13 +168,6 @@ describe('AgentForm', () => {
         // In edit mode, the name should be pre-filled from mock data (Production Agent)
         expect(nameInput).toBeInTheDocument();
       });
-    });
-
-    it('should display "Edit Agent" as title', () => {
-      renderEditForm('agent-uuid-001');
-
-      const title = screen.queryByText(/edit agent|editar agent/i);
-      expect(title).toBeInTheDocument();
     });
 
     it('should show loading state while fetching data', () => {

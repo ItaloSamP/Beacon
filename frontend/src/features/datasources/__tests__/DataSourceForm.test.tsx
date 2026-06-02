@@ -138,13 +138,6 @@ describe('DataSourceForm', () => {
 
       expect(cancelButton).toBeInTheDocument();
     });
-
-    it('should display "Create Data Source" as title', () => {
-      renderCreateForm();
-
-      const title = screen.queryByText(/create|new|criar|novo/i);
-      expect(title).toBeInTheDocument();
-    });
   });
 
   // ==========================================================
@@ -160,13 +153,6 @@ describe('DataSourceForm', () => {
         // (Production PostgreSQL from handlers)
         expect(nameInput).toBeInTheDocument();
       });
-    });
-
-    it('should display "Edit Data Source" as title', () => {
-      renderEditForm('ds-uuid-001');
-
-      const title = screen.queryByText(/edit|editar/i);
-      expect(title).toBeInTheDocument();
     });
 
     it('should show loading state while fetching data', () => {

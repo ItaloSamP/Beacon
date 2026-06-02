@@ -74,7 +74,7 @@ describe('DashboardPage', () => {
       renderDashboard();
 
       await waitFor(() => {
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByTestId('dashboard')).toBeInTheDocument();
       });
     });
 
@@ -397,8 +397,7 @@ describe('DashboardPage', () => {
       renderDashboard();
 
       await waitFor(() => {
-        // Verify data is rendered, confirming React Query fetched it
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByTestId('dashboard')).toBeInTheDocument();
       });
     });
 

@@ -957,6 +957,19 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 **Source:** Issue #4 — Spinner component refactor (2026-05-21)
 
+#### 2026-06-02 — Hotfix: Frontend requires non-CRUD backend endpoints for dashboard/listing pages
+
+**Context:** After login, dashboard pages showed blank content with only skeleton/loading states because three backend API endpoints that the frontend depended on were missing from the initial backend implementation.
+
+**Discovery:** Dashboard and list pages depend on backend endpoints beyond standard CRUD operations:
+1. **Aggregation/health endpoints** — e.g., `GET /datasources/health` returns status counts (healthy, warning, error) for the health overview section. The frontend DashboardPage calls this but it returned 404.
+2. **Toggle endpoints** — e.g., `POST /pipelines/{id}/toggle` flips a boolean `enabled` state. The frontend PipelinesListPage calls this to enable/disable pipelines inline via a switch component. A full `PUT` would work but the frontend expects a dedicated lightweight toggle.
+3. **Count fields in list meta** — e.g., `active_count` in the anomalies list `meta` object powers the tab badge showing "Active (3)". Without this field, the frontend shows 0 instead of the real count.
+
+**Solution:** When implementing dashboard or list pages, audit ALL API calls made by the frontend (check `fetch`/`useQuery`/`useMutation` calls) against the backend route definitions. For every frontend page that reaches production, verify every endpoint it calls exists in the backend. Add non-CRUD endpoints proactively when the frontend design requires them — health aggregations, toggles, and count fields are common patterns. Consider co-locating these with the entity route files (e.g., health endpoint in `routes/datasources.py`, toggle in `routes/pipelines.py`) rather than separate files.
+
+**Source:** hotfix-001 — Production bug (2026-06-02)
+
 #### 2026-05-21 — Frontend: Radix AlertDialog does not auto-add aria-modal="true"
 
 **Context:** The ConfirmDialog component uses `@radix-ui/react-alert-dialog`. Tests expected `aria-modal="true"` on the alertdialog element. The attribute was missing because Radix's `AlertDialog.Content` does not automatically set it (unlike `Dialog.Content`).

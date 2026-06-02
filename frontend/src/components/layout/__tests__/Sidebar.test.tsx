@@ -1,17 +1,14 @@
 /**
  * Unit tests for Sidebar component — refined version.
  *
- * Tests: nav items rendering (6 items: Dashboard, Agents,
+ * Tests: nav items (6 items: Dashboard, Agents,
  * DataSources, Pipelines, Anomalies, Alerts), active state
  * class on current route, badge counter on anomalies, lucide
  * icons, brand logo/name, user section (avatar + name),
- * mobile collapse toggle.
+ * mobile collapse toggle, logout button.
  *
- * Must wrap in MemoryRouter since Sidebar uses NavLink.
- *
- * RED PHASE: Tests WILL FAIL because the refined Sidebar
- * component doesn't exist yet with badge counter, user section,
- * and mobile collapse toggle.
+ * Must wrap in MemoryRouter since Sidebar uses NavLink,
+ * and in AuthProvider since Sidebar calls useAuth() for logout.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -19,16 +16,21 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
 
+import { AuthProvider } from '../../../hooks/useAuth';
+
 // IMPORT THAT WILL FAIL (RED PHASE — refined component doesn't exist)
 import { Sidebar } from '../Sidebar';
 
 /**
- * Render Sidebar wrapped in MemoryRouter (NavLink requires routing context).
+ * Render Sidebar wrapped in MemoryRouter (NavLink requires routing context)
+ * and AuthProvider (Sidebar calls useAuth() for logout).
  */
 function renderSidebar(initialRoute = '/') {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
-      <Sidebar />
+      <AuthProvider>
+        <Sidebar />
+      </AuthProvider>
     </MemoryRouter>
   );
 }
@@ -147,8 +149,6 @@ describe('Sidebar', () => {
     it('should render user avatar and name', () => {
       renderSidebar();
 
-      // Should have a user section at the bottom of sidebar
-      // May require auth context — verify the sidebar renders
       const aside = document.querySelector('aside');
       expect(aside).toBeInTheDocument();
     });
@@ -156,9 +156,18 @@ describe('Sidebar', () => {
     it('should render user section at the bottom of sidebar', () => {
       renderSidebar();
 
-      // The user section should be the last child of the sidebar
       const aside = document.querySelector('aside');
       expect(aside).toBeInTheDocument();
+    });
+
+    it('should render a logout button in user section', () => {
+      renderSidebar();
+
+      // The Sidebar should have a logout button (Sair)
+      const logoutBtn = document.querySelector('aside button[aria-label="Sair"]');
+      expect(logoutBtn).toBeInTheDocument();
+      const svg = logoutBtn?.querySelector('svg');
+      expect(svg).toBeInTheDocument();
     });
   });
 
