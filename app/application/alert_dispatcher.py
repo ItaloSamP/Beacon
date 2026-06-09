@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import Alert, AlertStatus
-from app.infrastructure.repositories.alert_repo import AlertRepository
 from app.infrastructure.notifiers.email import EmailNotifier
 
 

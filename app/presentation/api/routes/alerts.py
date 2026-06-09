@@ -1,10 +1,11 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database import get_db
 from app.infrastructure.repositories.alert_repo import AlertRepository
 from app.presentation.api.middleware.auth import require_auth
-from app.domain.schemas import ApiResponse
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -36,8 +37,9 @@ async def list_alerts(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     repo = AlertRepository(db)
-    alerts = await repo.list_all(channel=channel, status=status)
+    alerts = await repo.list_all(channel=channel, status=status, user_id=user_id)
     data_list = [_serialize_alert(a) for a in alerts]
 
     return {"data": data_list, "meta": {"total": len(data_list)}, "error": None}

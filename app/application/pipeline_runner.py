@@ -3,18 +3,17 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import (
     Anomaly,
-    AnomalySeverity,
     Alert,
     AlertChannel,
     AlertStatus,
     Pipeline,
     PipelineRun,
     PipelineRunStatus,
-    PipelineType,
 )
 from app.infrastructure.repositories.pipeline_repo import PipelineRepository
 from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
@@ -96,7 +95,7 @@ class PipelineRunService:
                     metrics_json=metrics,
                     finished_at=datetime.now(timezone.utc),
                 )
-        except Exception:
+        except (NotFoundException, SQLAlchemyError):
             pipeline_run = await self.pipeline_run_repo.update_status(
                 pipeline_run.id,
                 PipelineRunStatus.error,

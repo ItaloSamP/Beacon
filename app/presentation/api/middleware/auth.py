@@ -53,6 +53,9 @@ async def require_auth(request: Request, db: AsyncSession = Depends(get_db)) -> 
             repo = AgentTokenRepository(db)
             agent_token_obj = await repo.get_by_token_hash(token_hash)
             if agent_token_obj and agent_token_obj.agent:
+                # Update last_used_at inline
+                agent_token_obj.last_used_at = datetime.now(timezone.utc)
+                await repo.update_last_used(agent_token_obj.id)
                 return {
                     "agent_id": str(agent_token_obj.agent_id),
                     "user_id": str(agent_token_obj.agent.user_id),

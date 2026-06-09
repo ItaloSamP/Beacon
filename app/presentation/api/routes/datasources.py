@@ -50,8 +50,6 @@ def _handle_config(config, mask: bool) -> dict | str:
         return "****"
     if isinstance(config, dict) and "_encrypted" in config and len(config) == 1:
         # Try to decrypt
-        from app.application.datasource_service import DataSourceService
-        from app.infrastructure.repositories.datasource_repo import DataSourceRepository
         # We can't instantiate a service here without a db, so just return as-is
         # The service layer handles decryption on get_by_id
         return config
@@ -96,8 +94,9 @@ async def get_datasource(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     service = DataSourceService(DataSourceRepository(db))
-    ds = await service.get_by_id(id)
+    ds = await service.get_by_id(id, user_id=user_id)
 
     return ApiResponse(
         data=_serialize_datasource(ds, mask_config=False),
