@@ -21,7 +21,7 @@ async def seed():
 
         if existing_user:
             print("Seed data already exists. Nothing to do.")
-            print(f"  Admin user: admin@beacon.dev / admin123 (already present)")
+            print("  Admin user: admin@beacon.dev / admin123 (already present)")
             return
 
         user_id = uuid.uuid4()
