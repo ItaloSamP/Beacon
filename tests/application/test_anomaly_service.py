@@ -20,8 +20,7 @@ from datetime import datetime, timezone
 # RED PHASE imports — modules don't exist yet
 from app.application.anomaly_service import AnomalyService
 from app.domain.models import (
-    Anomaly, AnomalySeverity, PipelineRun, PipelineRunStatus,
-    Pipeline, DataSource, AlertRule, Alert, AlertChannel, AlertStatus,
+    Anomaly, AnomalySeverity,
 )
 
 
@@ -402,7 +401,7 @@ class TestAnomalyService:
         result = await service.resolve_anomaly("anom-uuid")
 
         assert result.resolved_at is not None
-        mock_anomaly_repo.resolve.assert_called_once_with("anom-uuid")
+        mock_anomaly_repo.resolve.assert_called_once_with("anom-uuid", user_id=None)
 
     @pytest.mark.asyncio
     async def test_resolve_anomaly_not_found(

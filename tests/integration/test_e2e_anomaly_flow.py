@@ -14,7 +14,6 @@ RED PHASE: All tests WILL FAIL because anomaly routes and pipeline runner don't 
 
 import pytest
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, patch
 
 
 class TestEndToEndAnomalyFlow:

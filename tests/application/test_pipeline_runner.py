@@ -18,13 +18,13 @@ RED PHASE: All tests WILL FAIL because PipelineRunService doesn't exist yet.
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
 
 
 # RED PHASE imports — modules don't exist yet
 from app.application.pipeline_runner import PipelineRunService
 from app.domain.models import (
     Pipeline, PipelineRun, PipelineRunStatus, PipelineType,
-    Anomaly, AnomalySeverity, AlertRule, AlertChannel,
 )
 
 
@@ -255,7 +255,7 @@ class TestPipelineRunService:
         """When an exception occurs, status should transition to 'error'."""
         mock_pipeline_repo.get_by_id = AsyncMock(return_value=sample_pipeline)
         mock_datasource_repo.get_by_id = AsyncMock(
-            side_effect=RuntimeError("Database unreachable")
+            side_effect=SQLAlchemyError("Database unreachable")
         )
 
         await service.run_pipeline(sample_pipeline.id)
@@ -415,7 +415,7 @@ class TestPipelineRunService:
         """When datasource lookup fails, run status should be ERROR."""
         mock_pipeline_repo.get_by_id = AsyncMock(return_value=sample_pipeline)
         mock_datasource_repo.get_by_id = AsyncMock(
-            side_effect=RuntimeError("Connection failure")
+            side_effect=SQLAlchemyError("Connection failure")
         )
 
         await service.run_pipeline(sample_pipeline.id)

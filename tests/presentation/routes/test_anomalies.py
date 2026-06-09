@@ -16,7 +16,6 @@ RED PHASE: All tests WILL FAIL because anomaly routes don't exist yet.
 import pytest
 from httpx import AsyncClient
 
-from tests.conftest import assert_response_shape, assert_error_response
 
 
 class TestCreateAnomaly:
@@ -732,3 +731,62 @@ class TestAnomalyValidation:
             "/api/v1/anomalies/recent?limit=-1", headers=auth_headers
         )
         assert response.status_code == 422
+
+
+class TestAnomalyAgentTokenOnly:
+    """M-4: POST /api/v1/anomalies requires agent token auth (not JWT or API key)."""
+
+    @pytest.mark.asyncio
+    async def test_create_with_jwt_returns_403(
+        self, async_client: AsyncClient, auth_headers: dict,
+        sample_pipeline_run: dict
+    ):
+        """JWT (dashboard user) should get 403 on POST /anomalies."""
+        payload = {
+            "pipeline_run_id": sample_pipeline_run["id"],
+            "severity": "high",
+            "type": "volume",
+        }
+
+        response = await async_client.post(
+            "/api/v1/anomalies", json=payload, headers=auth_headers
+        )
+        assert response.status_code == 403, (
+            f"Expected 403 for JWT auth, got {response.status_code}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_with_agent_token_returns_201(
+        self, async_client: AsyncClient, agent_token: dict,
+        sample_pipeline_run: dict
+    ):
+        """Agent token should be accepted for creating anomalies."""
+        payload = {
+            "pipeline_run_id": sample_pipeline_run["id"],
+            "severity": "high",
+            "type": "volume",
+            "description": "Detected by agent (M-4 test)",
+        }
+
+        response = await async_client.post(
+            "/api/v1/anomalies", json=payload, headers=agent_token["headers"]
+        )
+        assert response.status_code == 201, (
+            f"Agent token should allow anomaly creation, got {response.status_code}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_without_auth_returns_401(
+        self, async_client: AsyncClient, sample_pipeline_run: dict
+    ):
+        """No auth returns 401."""
+        payload = {
+            "pipeline_run_id": sample_pipeline_run["id"],
+            "severity": "low",
+            "type": "volume",
+        }
+
+        response = await async_client.post(
+            "/api/v1/anomalies", json=payload
+        )
+        assert response.status_code == 401

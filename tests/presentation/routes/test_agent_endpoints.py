@@ -13,7 +13,7 @@ RED PHASE: All tests WILL FAIL because agent endpoints don't exist yet.
 import pytest
 from httpx import AsyncClient
 
-from tests.conftest import assert_response_shape, assert_error_response
+from tests.conftest import assert_response_shape
 
 
 class TestAgentSelfConfig:

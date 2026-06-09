@@ -13,15 +13,14 @@ RED PHASE: All tests WILL FAIL because AlertDispatcher doesn't exist yet.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime, timezone
 
 
 # RED PHASE imports — modules don't exist yet
 from app.application.alert_dispatcher import AlertDispatcher
 from app.domain.models import (
-    Anomaly, AnomalySeverity, AlertRule, Alert,
-    AlertChannel, AlertStatus, PipelineRun,
+    Anomaly, AnomalySeverity, AlertRule, AlertChannel, AlertStatus,
 )
 
 
