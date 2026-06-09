@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from app.domain.models import PipelineRun, PipelineRunStatus
+from app.domain.models import Agent, DataSource, Pipeline, PipelineRun, PipelineRunStatus
 
 
 class PipelineRunRepository:
@@ -20,21 +20,45 @@ class PipelineRunRepository:
         await self.session.refresh(pipeline_run)
         return pipeline_run
 
-    async def get_by_id(self, run_id: str) -> PipelineRun | None:
-        result = await self.session.execute(
+    async def get_by_id(self, run_id: str, user_id: UUID | None = None) -> PipelineRun | None:
+        query = (
             select(PipelineRun)
             .where(PipelineRun.id == run_id)
             .options(selectinload(PipelineRun.pipeline))
         )
+        if user_id is not None:
+            query = (
+                query
+                .join(PipelineRun.pipeline)
+                .join(Pipeline.data_source)
+                .join(DataSource.agent)
+                .where(Agent.user_id == user_id)
+            )
+        result = await self.session.execute(query)
         return result.unique().scalar_one_or_none()
 
     async def list_by_pipeline(
-        self, pipeline_id: str, page: int = 1, per_page: int = 50
+        self, pipeline_id: str, page: int = 1, per_page: int = 50, user_id: UUID | None = None
     ) -> dict:
         base_query = select(PipelineRun).where(PipelineRun.pipeline_id == pipeline_id)
         count_query = select(func.count(PipelineRun.id)).where(
             PipelineRun.pipeline_id == pipeline_id
         )
+        if user_id is not None:
+            base_query = (
+                base_query
+                .join(PipelineRun.pipeline)
+                .join(Pipeline.data_source)
+                .join(DataSource.agent)
+                .where(Agent.user_id == user_id)
+            )
+            count_query = (
+                count_query
+                .join(PipelineRun.pipeline)
+                .join(Pipeline.data_source)
+                .join(DataSource.agent)
+                .where(Agent.user_id == user_id)
+            )
 
         total_result = await self.session.execute(count_query)
         total = total_result.scalar() or 0
@@ -50,13 +74,22 @@ class PipelineRunRepository:
 
         return {"data": items, "total": total}
 
-    async def list_recent(self, limit: int = 10) -> list[PipelineRun]:
-        result = await self.session.execute(
+    async def list_recent(self, limit: int = 10, user_id: UUID | None = None) -> list[PipelineRun]:
+        query = (
             select(PipelineRun)
             .options(selectinload(PipelineRun.pipeline))
             .order_by(PipelineRun.started_at.desc())
             .limit(limit)
         )
+        if user_id is not None:
+            query = (
+                query
+                .join(PipelineRun.pipeline)
+                .join(Pipeline.data_source)
+                .join(DataSource.agent)
+                .where(Agent.user_id == user_id)
+            )
+        result = await self.session.execute(query)
         return list(result.unique().scalars().all())
 
     async def update_status(

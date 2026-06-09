@@ -1,4 +1,4 @@
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 import json
 import base64
 from app.shared.config import settings
