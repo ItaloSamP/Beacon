@@ -1,7 +1,7 @@
 ---
 description: TDD test writer. Reads the plan and PROJECT_CONTEXT.md, writes ONLY failing tests (mocks, interfaces, stubs) using the correct framework for the stack. Does NOT implement code. After writing tests, delegates to executor.
 mode: subagent
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true

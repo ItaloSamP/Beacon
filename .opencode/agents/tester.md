@@ -1,7 +1,7 @@
 ---
 description: Executes comprehensive tests, generates coverage reports, and logs all results. Reads from the unified task file.
 mode: subagent
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   firecrawl_*: true
   figma_*: true

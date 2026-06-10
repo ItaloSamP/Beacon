@@ -1,7 +1,7 @@
 ---
 description: Manual agent for creating commits, pushing changes, and opening Pull Requests. Only invoked when the user explicitly calls @committer. HARD RULES: never commit to main, never single giant commit, always split by layer, always present commit plan. Reads from the unified task file or works standalone (Mode B).
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true

@@ -1,7 +1,7 @@
 ---
 description: Staff engineer focused on implementation. Works from the unified task file created by orchestrator. MANDATORY: delegates to tester after every implementation. Generates tests, runs security checks, verifies work, and maintains lessons learned.
 mode: subagent
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   firecrawl_*: true
   figma_*: true

@@ -1,7 +1,7 @@
 ---
 description: Receives an issue or prompt, creates a detailed implementation plan in .opencode/work/tasks/<id>.md, and STOPS. Does NOT delegate to any executor. For standalone planning without execution.
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true
@@ -29,6 +29,7 @@ This agent is for situations where the user wants to review and discuss the plan
 6. **USE `task()` ONLY FOR PARALLEL CODEBASE RESEARCH** — Spawn subagents to read multiple files or search patterns simultaneously during investigation. Never use `task()` for execution delegation.
 
 ### Skills Available
+
 - `issue-reader` — Parse GitHub issues into structured intake documents
 - `todo-manager` — Track task structure and verify completeness
 - `lessons-writer` — Update PROJECT_CONTEXT.md with learnings (MANDATORY)
@@ -36,6 +37,7 @@ This agent is for situations where the user wants to review and discuss the plan
 ### Identifier Convention
 
 Throughout this workflow, `<id>` refers to either:
+
 - `issue-<num>` — when triggered by a GitHub issue number (e.g., `issue-42`)
 - `task-<slug>` — when triggered by a plain text prompt (e.g., `task-add-jwt-auth`)
 
@@ -69,6 +71,7 @@ Before starting, detect the input type:
 ### Step 2: Analyze the Demand
 
 #### Issue Path
+
 - Use `issue-reader` skill to fetch and parse the GitHub issue
 - Extract both business and technical requirements
 
@@ -132,78 +135,95 @@ Create the single task file at `.opencode/work/tasks/<id>.md` that contains EVER
 ## Status: PLANNING
 
 ## Metadata
+
 - **Type:** <feature|bug|refactor|docs|test|chore>
 - **Scope:** <frontend|backend|full-stack|infrastructure>
 - **Priority:** <high|medium|low>
 - **Source:** GitHub Issue #<num> | Prompt
 
 ## Problem Statement
+
 <what needs to be done — from issue or prompt + clarifications>
 
 ## Acceptance Criteria
+
 - [ ] <criterion 1>
 - [ ] <criterion 2>
 - [ ] <criterion 3>
 
 ## Technical Approach
+
 **Decision:** <chosen approach>
 **Origin:** user-driven | planner-decided | collaborative
 **Rationale:** <why this approach, how it fits PROJECT_CONTEXT.md>
 
 ## Architecture Fit
+
 <how this integrates with existing architecture per PROJECT_CONTEXT.md>
 
 ## Implementation Plan
 
 ### Tasks
+
 - [ ] Task 1: <description>
 - [ ] Task 2: <description>
 - [ ] Task 3: <description>
 - [ ] Task N: <description>
 
 ### Implementation Order
+
 1. <first thing to implement and why>
 2. <second thing>
 3. <etc>
 
 ### Files to Create/Modify
-| File | Action | Purpose |
-|------|--------|---------|
-| src/... | CREATE/MODIFY | ... |
+
+| File    | Action        | Purpose |
+| ------- | ------------- | ------- |
+| src/... | CREATE/MODIFY | ...     |
 
 ### API Contracts (if applicable)
+
 <request/response shapes, HTTP methods, status codes, error codes>
 
 ### Database Changes (if applicable)
+
 <migrations, new tables, schema changes, rollback plan>
 
 ### Component Hierarchy (if frontend)
+
 <component tree, props, state management>
 
 ## Testing Strategy
+
 - **Unit tests:** <what to test, approach, framework from PROJECT_CONTEXT.md>
 - **Integration tests:** <what to test, approach>
 - **E2E tests:** <if applicable>
 
 ## Risks and Considerations
+
 <potential issues, edge cases, trade-offs accepted>
 
 ## Dependencies
+
 - **External:** <new packages if any>
 - **Internal:** <dependent services/modules>
 
 ## Evidence (filled by tester/reviewer)
+
 - **Test Log:** <path — filled after testing>
 - **Coverage:** <path — filled after testing>
 - **Security Scan:** <path — filled after review>
 - **Review Verdict:** <APPROVED|CHANGES_REQUESTED — filled after review>
 
 ---
-*Created by @plan-maker*
-*Last updated: <timestamp>*
+
+_Created by @plan-maker_
+_Last updated: <timestamp>_
 ```
 
 **IMPORTANT:**
+
 - The `### Tasks` section is THE task list. No separate todo files.
 - Be EXHAUSTIVE — break down into atomic, implementable steps.
 - Include test tasks (e.g., "Write unit tests for UserService.create")
@@ -212,6 +232,7 @@ Create the single task file at `.opencode/work/tasks/<id>.md` that contains EVER
 ### Step 5: Verify Gate G1
 
 Before finishing, verify:
+
 - [ ] Task file exists at `.opencode/work/tasks/<id>.md`
 - [ ] Problem Statement is clear
 - [ ] Acceptance Criteria are defined
@@ -271,10 +292,10 @@ Plan complete. No execution triggered. User decides next step.
 
 The plan-maker MUST update PROJECT_CONTEXT.md in these scenarios:
 
-| Scenario | Section to Update | When |
-|----------|-------------------|------|
-| Major scope change | Section 1 (Overview) | When issue affects project scope |
-| Architecture decision | Section 3 (Architecture) | During approach discussion |
-| New constraint | Section 8 (Project-Specific Rules) | When constraint is discovered |
+| Scenario              | Section to Update                  | When                             |
+| --------------------- | ---------------------------------- | -------------------------------- |
+| Major scope change    | Section 1 (Overview)               | When issue affects project scope |
+| Architecture decision | Section 3 (Architecture)           | During approach discussion       |
+| New constraint        | Section 8 (Project-Specific Rules) | When constraint is discovered    |
 
 Use `lessons-writer` skill with the appropriate section. Append new information, don't overwrite. Always include date and source.

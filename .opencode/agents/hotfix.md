@@ -1,7 +1,7 @@
 ---
 description: Expedited workflow for critical production fixes. Bypasses Orchestrator's discussion phase. Creates unified task file and delegates directly to executor.
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   firecrawl_*: true
   figma_*: true

@@ -1,6 +1,6 @@
+import enum
 import uuid
 from datetime import UTC, datetime
-from enum import StrEnum
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
 from sqlalchemy import Enum as SAEnum
@@ -14,49 +14,49 @@ def utcnow():
     return datetime.now(UTC)
 
 
-class AgentStatus(StrEnum):
+class AgentStatus(str, enum.Enum):
     online = "online"
     offline = "offline"
 
 
-class DataSourceType(StrEnum):
+class DataSourceType(str, enum.Enum):
     postgres = "postgres"
     mysql = "mysql"
     bigquery = "bigquery"
     google_sheets = "google_sheets"
 
 
-class DataSourceStatus(StrEnum):
+class DataSourceStatus(str, enum.Enum):
     active = "active"
     inactive = "inactive"
     error = "error"
 
 
-class PipelineType(StrEnum):
+class PipelineType(str, enum.Enum):
     volume = "volume"
     null_check = "null_check"
     schema_change = "schema_change"
 
 
-class PipelineRunStatus(StrEnum):
+class PipelineRunStatus(str, enum.Enum):
     success = "success"
     warning = "warning"
     error = "error"
 
 
-class AnomalySeverity(StrEnum):
+class AnomalySeverity(str, enum.Enum):
     low = "low"
     medium = "medium"
     high = "high"
     critical = "critical"
 
 
-class AlertChannel(StrEnum):
+class AlertChannel(str, enum.Enum):
     email = "email"
     slack = "slack"
 
 
-class AlertStatus(StrEnum):
+class AlertStatus(str, enum.Enum):
     sent = "sent"
     failed = "failed"
 
