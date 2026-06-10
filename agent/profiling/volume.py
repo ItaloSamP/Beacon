@@ -17,5 +17,5 @@ class VolumeProfiler:
         return {
             "table": table_name,
             "row_count": row_count,
-            "profiled_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "profiled_at": datetime.datetime.now(datetime.UTC).isoformat(),
         }

@@ -11,8 +11,9 @@ Tests the core authentication logic:
 RED PHASE: All tests WILL FAIL because AuthService doesn't exist yet.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 # ============================================================
 # IMPORTS THAT WILL FAIL (RED PHASE)
@@ -20,11 +21,11 @@ from unittest.mock import AsyncMock, MagicMock
 from app.application.auth_service import AuthService
 from app.domain.models import User
 from app.infrastructure.security import (
-    hash_password,
-    verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
+    verify_password,
 )
 
 
@@ -295,6 +296,7 @@ class TestTokenGenerationAndValidation:
         Decoding an expired token should raise an error or return None.
         """
         import time
+
         import jwt as pyjwt
 
         # Create a token that expired 1 hour ago (using PyJWT directly to force expiry)
@@ -372,7 +374,9 @@ class TestRefreshTokenFlow:
         Refreshing with an expired refresh token should raise an error.
         """
         import time
+
         import jwt as pyjwt
+
         from app.shared.config import settings
 
         expired_token = pyjwt.encode(

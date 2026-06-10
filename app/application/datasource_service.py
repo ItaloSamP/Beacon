@@ -5,9 +5,9 @@ from uuid import UUID
 
 from cryptography.fernet import InvalidToken
 
-from app.domain.models import DataSource, Agent
+from app.domain.models import Agent, DataSource
 from app.infrastructure.repositories.datasource_repo import DataSourceRepository
-from app.shared.exceptions import NotFoundException, BadRequestException
+from app.shared.exceptions import BadRequestException, NotFoundException
 
 
 class DataSourceService:

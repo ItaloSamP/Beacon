@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 from httpx import AsyncClient
 
 from app.domain.models import Alert, AlertChannel, AlertStatus
@@ -87,13 +88,14 @@ class TestAlertCrossUserIsolation:
         anomaly_id = anom_resp.json()["data"]["id"]
 
         # Seed an alert linked to A's anomaly directly via DB
-        from app.domain.models import Alert, AlertChannel, AlertStatus
         from uuid import UUID
+
+        from app.domain.models import Alert, AlertChannel, AlertStatus
         alert = Alert(
             anomaly_id=UUID(anomaly_id),
             channel=AlertChannel.email,
             status=AlertStatus.sent,
-            sent_at=datetime.now(timezone.utc),
+            sent_at=datetime.now(UTC),
         )
         test_db.add(alert)
         await test_db.flush()
@@ -195,7 +197,7 @@ class TestAlertCrossUserIsolation:
             anomaly_id=UUID(anomaly_id),
             channel=AlertChannel.email,
             status=AlertStatus.sent,
-            sent_at=datetime.now(timezone.utc),
+            sent_at=datetime.now(UTC),
         )
         test_db.add(alert)
         await test_db.flush()

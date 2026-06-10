@@ -3,8 +3,8 @@ import uuid
 
 from sqlalchemy import select
 
-from app.infrastructure.database import async_session_factory, Base, engine
-from app.domain.models import User, Agent, DataSource, Pipeline
+from app.domain.models import Agent, DataSource, Pipeline, User
+from app.infrastructure.database import Base, async_session_factory, engine
 from app.infrastructure.security import hash_password
 
 

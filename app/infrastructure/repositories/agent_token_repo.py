@@ -1,7 +1,10 @@
+from datetime import UTC
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
 from app.domain.models import AgentToken
 
 
@@ -28,10 +31,10 @@ class AgentTokenRepository:
         return list(result.scalars().all())
 
     async def update_last_used(self, token_id: UUID) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
         token = await self.db.get(AgentToken, token_id)
         if token:
-            token.last_used_at = datetime.now(timezone.utc)
+            token.last_used_at = datetime.now(UTC)
             await self.db.flush()
 
     async def delete(self, token_id: UUID) -> None:

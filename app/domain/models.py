@@ -1,61 +1,62 @@
 import uuid
-import enum
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from enum import StrEnum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.infrastructure.database import Base
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-class AgentStatus(str, enum.Enum):
+class AgentStatus(StrEnum):
     online = "online"
     offline = "offline"
 
 
-class DataSourceType(str, enum.Enum):
+class DataSourceType(StrEnum):
     postgres = "postgres"
     mysql = "mysql"
     bigquery = "bigquery"
     google_sheets = "google_sheets"
 
 
-class DataSourceStatus(str, enum.Enum):
+class DataSourceStatus(StrEnum):
     active = "active"
     inactive = "inactive"
     error = "error"
 
 
-class PipelineType(str, enum.Enum):
+class PipelineType(StrEnum):
     volume = "volume"
     null_check = "null_check"
     schema_change = "schema_change"
 
 
-class PipelineRunStatus(str, enum.Enum):
+class PipelineRunStatus(StrEnum):
     success = "success"
     warning = "warning"
     error = "error"
 
 
-class AnomalySeverity(str, enum.Enum):
+class AnomalySeverity(StrEnum):
     low = "low"
     medium = "medium"
     high = "high"
     critical = "critical"
 
 
-class AlertChannel(str, enum.Enum):
+class AlertChannel(StrEnum):
     email = "email"
     slack = "slack"
 
 
-class AlertStatus(str, enum.Enum):
+class AlertStatus(StrEnum):
     sent = "sent"
     failed = "failed"
 

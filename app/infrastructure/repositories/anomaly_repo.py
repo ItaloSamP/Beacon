@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 
-from app.domain.models import (Anomaly, PipelineRun, Pipeline, DataSource, Agent)
+from app.domain.models import Agent, Anomaly, DataSource, Pipeline, PipelineRun
 
 
 class AnomalyRepository:
@@ -83,7 +83,7 @@ class AnomalyRepository:
         anomaly = await self.get_by_id(anomaly_id, user_id=user_id)
         if not anomaly:
             return None
-        anomaly.resolved_at = datetime.now(timezone.utc)
+        anomaly.resolved_at = datetime.now(UTC)
         await self.db.flush()
         await self.db.refresh(anomaly)
         return anomaly

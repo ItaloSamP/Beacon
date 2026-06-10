@@ -1,6 +1,16 @@
 from fastapi import APIRouter
 
-from app.presentation.api.routes import health, auth, datasources, pipelines, api_keys, agents, pipeline_runs, anomalies, alerts
+from app.presentation.api.routes import (
+    agents,
+    alerts,
+    anomalies,
+    api_keys,
+    auth,
+    datasources,
+    health,
+    pipeline_runs,
+    pipelines,
+)
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(health.router, tags=["health"])

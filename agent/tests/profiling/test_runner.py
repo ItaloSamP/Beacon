@@ -5,10 +5,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from agent.profiling.runner import ProfileRunner, ProfileResult  # noqa: E402
+from agent.profiling.runner import ProfileResult, ProfileRunner  # noqa: E402
 
 from .conftest import make_mock_connector
-
 
 # ── ProfileRunner ────────────────────────────────────────────────────
 

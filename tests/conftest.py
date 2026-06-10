@@ -9,18 +9,18 @@ These fixtures provide:
 """
 
 import os
+
 os.environ["EMAIL_CHECK_DELIVERABILITY"] = "false"
 
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 
-from httpx import AsyncClient, ASGITransport
+from app.infrastructure.database import Base, async_session_factory, engine, get_db
 
 # ============================================================
 # IMPORTS THAT WILL FAIL (RED PHASE — modules don't exist yet)
 # ============================================================
 from app.main import app
-from app.infrastructure.database import get_db, engine, Base, async_session_factory
-
 
 # ============================================================
 # Override the get_db dependency for testing

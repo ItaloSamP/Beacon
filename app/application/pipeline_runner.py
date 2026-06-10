@@ -1,23 +1,23 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import (
-    Anomaly,
     Alert,
     AlertChannel,
     AlertStatus,
+    Anomaly,
     Pipeline,
     PipelineRun,
     PipelineRunStatus,
 )
+from app.infrastructure.repositories.datasource_repo import DataSourceRepository
 from app.infrastructure.repositories.pipeline_repo import PipelineRepository
 from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
-from app.infrastructure.repositories.datasource_repo import DataSourceRepository
 from app.shared.exceptions import NotFoundException
 
 
@@ -43,7 +43,7 @@ class PipelineRunService:
             pipeline_id=UUID(pipeline_id),
             status=PipelineRunStatus.success,
             metrics_json={},
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         pipeline_run = await self.pipeline_run_repo.create(pipeline_run)
 
@@ -77,7 +77,7 @@ class PipelineRunService:
                     anomaly_id=anomaly.id,
                     channel=AlertChannel.email,
                     status=AlertStatus.sent,
-                    sent_at=datetime.now(timezone.utc),
+                    sent_at=datetime.now(UTC),
                 )
                 self.db.add(alert)
                 await self.db.flush()
@@ -86,20 +86,20 @@ class PipelineRunService:
                     pipeline_run.id,
                     PipelineRunStatus.warning,
                     metrics_json=metrics,
-                    finished_at=datetime.now(timezone.utc),
+                    finished_at=datetime.now(UTC),
                 )
             else:
                 pipeline_run = await self.pipeline_run_repo.update_status(
                     pipeline_run.id,
                     PipelineRunStatus.success,
                     metrics_json=metrics,
-                    finished_at=datetime.now(timezone.utc),
+                    finished_at=datetime.now(UTC),
                 )
         except (NotFoundException, SQLAlchemyError):
             pipeline_run = await self.pipeline_run_repo.update_status(
                 pipeline_run.id,
                 PipelineRunStatus.error,
-                finished_at=datetime.now(timezone.utc),
+                finished_at=datetime.now(UTC),
             )
 
         return pipeline_run

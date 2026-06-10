@@ -23,11 +23,11 @@ class HeartbeatService:
             try:
                 await asyncio.wait_for(self._stop_event.wait(), timeout=self.interval)
                 break
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
             try:
                 await self.api_client.send_heartbeat(self.agent_id)
-            except (ConnectionError, asyncio.TimeoutError, RuntimeError, OSError):
+            except (TimeoutError, ConnectionError, RuntimeError, OSError):
                 logger.warning("Heartbeat failed", exc_info=True)
 
     async def stop(self):

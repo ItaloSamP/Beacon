@@ -66,7 +66,7 @@ class PostgresConnector:
             self._conn = await asyncio.wait_for(
                 asyncpg.connect(dsn), timeout=10.0
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise PostgresTimeoutError("Connection timed out") from None
         except OSError as e:
             raise PostgresConnectionError(str(e)) from e
@@ -174,7 +174,7 @@ class PostgresConnector:
         total = total if total is not None else 0
 
         if total == 0:
-            return {col: 0.0 for col in columns}
+            return dict.fromkeys(columns, 0.0)
 
         # --- build single query: COUNT(*) - COUNT(col) per column -----
         null_exprs = []
@@ -188,7 +188,7 @@ class PostgresConnector:
         row = await self._conn.fetchrow(query)
 
         if row is None:
-            return {col: 0.0 for col in columns}
+            return dict.fromkeys(columns, 0.0)
 
         return {
             col: row[f"{col}_nulls"] / total

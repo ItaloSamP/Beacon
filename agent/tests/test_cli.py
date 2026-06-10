@@ -309,16 +309,15 @@ class TestTokenHandling:
         """If BEACON_AGENT_TOKEN env var is set, use it when --token not provided."""
         with patch.dict(
             os.environ, {"BEACON_AGENT_TOKEN": "env_token_abc"}, clear=False
-        ):
-            with patch("agent.cli.AgentAPIClient") as mock_api_cls:
-                mock_api_cls.return_value.get_config = AsyncMock(
-                    return_value={
-                        "data": {"agent": {}, "data_sources": [], "pipelines": []}
-                    }
-                )
-                runner.invoke(cli, ["run", "--once"])
-                call_kwargs = mock_api_cls.call_args.kwargs
-                assert call_kwargs.get("agent_token") == "env_token_abc"
+        ), patch("agent.cli.AgentAPIClient") as mock_api_cls:
+            mock_api_cls.return_value.get_config = AsyncMock(
+                return_value={
+                    "data": {"agent": {}, "data_sources": [], "pipelines": []}
+                }
+            )
+            runner.invoke(cli, ["run", "--once"])
+            call_kwargs = mock_api_cls.call_args.kwargs
+            assert call_kwargs.get("agent_token") == "env_token_abc"
 
 
 # ── offline resilience ────────────────────────────────────────────────
@@ -648,6 +647,7 @@ class TestPyProjectEntryPoint:
 
     def test_main_is_click_group(self):
         """The main entry point should be a click Group or Command."""
-        from agent.cli import main
         import click
+
+        from agent.cli import main
         assert isinstance(main, (click.Group, click.Command))

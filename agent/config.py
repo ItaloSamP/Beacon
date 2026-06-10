@@ -3,7 +3,11 @@
 import os
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 from pydantic_settings.sources import EnvSettingsSource
 
 

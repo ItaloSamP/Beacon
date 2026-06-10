@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from cryptography.fernet import InvalidToken
 
 from app.application.datasource_service import DataSourceService

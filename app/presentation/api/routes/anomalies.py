@@ -3,15 +3,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db
 from app.application.anomaly_service import AnomalyService
-from app.presentation.api.middleware.auth import require_auth
-from app.shared.exceptions import NotFoundException
 from app.domain.schemas import (
     AnomalyCreate,
     ApiResponse,
     PaginatedApiResponse,
 )
+from app.infrastructure.database import get_db
+from app.presentation.api.middleware.auth import require_auth
+from app.shared.exceptions import NotFoundException
 
 router = APIRouter(prefix="/anomalies", tags=["anomalies"])
 

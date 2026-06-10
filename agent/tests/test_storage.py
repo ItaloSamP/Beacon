@@ -7,7 +7,6 @@ import pytest
 # RED PHASE — these imports will fail until the modules are created
 from agent.storage import AgentStorage  # noqa: E402
 
-
 # ── helpers ──────────────────────────────────────────────────────────
 
 @pytest.fixture

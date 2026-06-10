@@ -1,17 +1,20 @@
-from email_validator import validate_email, EmailNotValidError
-
-from app.shared.config import settings
+from email_validator import EmailNotValidError, validate_email
 
 from app.domain.models import User
 from app.infrastructure.repositories.user_repo import UserRepository
 from app.infrastructure.security import (
-    hash_password,
-    verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
+    verify_password,
 )
-from app.shared.exceptions import ConflictException, UnauthorizedException, ValidationException
+from app.shared.config import settings
+from app.shared.exceptions import (
+    ConflictException,
+    UnauthorizedException,
+    ValidationException,
+)
 
 
 class AuthService:
@@ -22,8 +25,8 @@ class AuthService:
         try:
             valid = validate_email(email, check_deliverability=settings.EMAIL_CHECK_DELIVERABILITY)
             email = valid.normalized
-        except EmailNotValidError:
-            raise ValidationException("Invalid email format", error_code="invalid_email")
+        except EmailNotValidError as err:
+            raise ValidationException("Invalid email format", error_code="invalid_email") from err
 
         if len(password) < 8:
             raise ValidationException("Password must be at least 8 characters", error_code="weak_password")
@@ -85,8 +88,8 @@ class AuthService:
 
         try:
             payload = decode_token(refresh_token)
-        except Exception:
-            raise UnauthorizedException("Invalid or expired token", error_code="invalid_token")
+        except Exception as err:
+            raise UnauthorizedException("Invalid or expired token", error_code="invalid_token") from err
 
         if payload.get("type") != "refresh":
             raise UnauthorizedException("Invalid token type", error_code="invalid_token")

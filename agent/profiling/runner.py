@@ -80,7 +80,7 @@ class ProfileRunner:
         volume_profiler = VolumeProfiler()
         null_profiler = NullCheckProfiler()
 
-        profiled_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        profiled_at = datetime.datetime.now(datetime.UTC).isoformat()
 
         for tbl in target_tables:
             # Skip tables not known to the connector

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestAgentTokenLastUsedAt:
@@ -31,18 +32,17 @@ class TestAgentTokenLastUsedAt:
         with patch(
             "app.presentation.api.middleware.auth.decode_token",
             side_effect=Exception("not a jwt"),
-        ):
-            with patch(
-                "app.infrastructure.repositories.agent_token_repo.AgentTokenRepository"
-            ) as MockRepo:
-                mock_repo_instance = MagicMock()
-                mock_repo_instance.get_by_token_hash = AsyncMock(
-                    return_value=mock_token_obj
-                )
-                mock_repo_instance.update_last_used = AsyncMock()
-                MockRepo.return_value = mock_repo_instance
+        ), patch(
+            "app.infrastructure.repositories.agent_token_repo.AgentTokenRepository"
+        ) as mock_repo_cls:
+            mock_repo_instance = MagicMock()
+            mock_repo_instance.get_by_token_hash = AsyncMock(
+                return_value=mock_token_obj
+            )
+            mock_repo_instance.update_last_used = AsyncMock()
+            mock_repo_cls.return_value = mock_repo_instance
 
-                result = await require_auth(mock_request, mock_db)
+            result = await require_auth(mock_request, mock_db)
 
         assert result["auth_method"] == "agent_token"
         assert result["user_id"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -69,15 +69,14 @@ class TestAgentTokenLastUsedAt:
         with patch(
             "app.presentation.api.middleware.auth.decode_token",
             side_effect=Exception("not a jwt"),
-        ):
-            with patch(
-                "app.infrastructure.repositories.agent_token_repo.AgentTokenRepository"
-            ) as MockRepo:
-                mock_repo_instance = MagicMock()
-                mock_repo_instance.get_by_token_hash = AsyncMock(
-                    return_value=mock_token_obj
-                )
-                MockRepo.return_value = mock_repo_instance
+        ), patch(
+            "app.infrastructure.repositories.agent_token_repo.AgentTokenRepository"
+        ) as mock_repo_cls:
+            mock_repo_instance = MagicMock()
+            mock_repo_instance.get_by_token_hash = AsyncMock(
+                return_value=mock_token_obj
+            )
+            mock_repo_cls.return_value = mock_repo_instance
 
-                with pytest.raises(UnauthorizedException):
-                    await require_auth(mock_request, mock_db)
+            with pytest.raises(UnauthorizedException):
+                await require_auth(mock_request, mock_db)

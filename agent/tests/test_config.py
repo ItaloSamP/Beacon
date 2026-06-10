@@ -9,7 +9,6 @@ from pydantic import ValidationError
 # RED PHASE — this import will fail until the module is created
 from agent.config import AgentConfig  # noqa: E402
 
-
 # ── Defaults ──────────────────────────────────────────────────────────
 
 class TestAgentConfigDefaults:

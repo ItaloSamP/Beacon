@@ -1,12 +1,20 @@
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
-
 from uuid import UUID
 
-from app.domain.models import Agent, Alert, AlertStatus, Anomaly, DataSource, Pipeline, PipelineRun
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
+from app.domain.models import (
+    Agent,
+    Alert,
+    AlertStatus,
+    Anomaly,
+    DataSource,
+    Pipeline,
+    PipelineRun,
+)
 
 
 class AlertRepository:

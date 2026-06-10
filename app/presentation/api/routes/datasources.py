@@ -3,16 +3,16 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db
-from app.infrastructure.repositories.datasource_repo import DataSourceRepository
 from app.application.datasource_service import DataSourceService
-from app.presentation.api.middleware.auth import require_auth
 from app.domain.schemas import (
+    ApiResponse,
     DataSourceCreate,
     DataSourceUpdate,
-    ApiResponse,
     PaginatedApiResponse,
 )
+from app.infrastructure.database import get_db
+from app.infrastructure.repositories.datasource_repo import DataSourceRepository
+from app.presentation.api.middleware.auth import require_auth
 
 router = APIRouter(prefix="/datasources", tags=["datasources"])
 

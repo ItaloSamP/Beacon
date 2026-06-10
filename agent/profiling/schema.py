@@ -18,5 +18,5 @@ class SchemaProfiler:
             "table": table_name,
             "columns": columns,
             "column_count": len(columns),
-            "profiled_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "profiled_at": datetime.datetime.now(datetime.UTC).isoformat(),
         }

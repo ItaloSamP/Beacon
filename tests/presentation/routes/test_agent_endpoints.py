@@ -280,7 +280,7 @@ class TestAgentEndpointAuth:
         """A JWT token (not agent token) on agent endpoint should be rejected."""
         # RED PHASE
         # Register user to get a JWT
-        reg = await async_client.post("/api/v1/auth/register", json={
+        await async_client.post("/api/v1/auth/register", json={
             "email": "wrong-prefix@example.com",
             "password": "StrongPass123!",
             "name": "Wrong Prefix",

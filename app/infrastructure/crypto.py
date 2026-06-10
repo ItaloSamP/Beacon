@@ -1,6 +1,8 @@
-from cryptography.fernet import Fernet
-import json
 import base64
+import json
+
+from cryptography.fernet import Fernet
+
 from app.shared.config import settings
 
 

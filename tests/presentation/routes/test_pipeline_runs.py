@@ -449,7 +449,7 @@ class TestPipelineRunAuth:
             f"/api/v1/pipelines/{pipe_id}/run", headers=headers_a
         )
         assert run_resp.status_code == 202
-        a_run_id = run_resp.json()["data"]["run_id"]
+        _a_run_id = run_resp.json()["data"]["run_id"]
 
         # Register user B
         reg_b = await async_client.post("/api/v1/auth/register", json={

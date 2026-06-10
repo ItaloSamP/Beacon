@@ -3,17 +3,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db
-from app.infrastructure.repositories.agent_repo import AgentRepository
-from app.infrastructure.repositories.agent_token_repo import AgentTokenRepository
 from app.application.agent_service import AgentService
-from app.presentation.api.middleware.auth import require_auth
 from app.domain.schemas import (
     AgentCreate,
     AgentUpdate,
     ApiResponse,
     PaginatedApiResponse,
 )
+from app.infrastructure.database import get_db
+from app.infrastructure.repositories.agent_repo import AgentRepository
+from app.infrastructure.repositories.agent_token_repo import AgentTokenRepository
+from app.presentation.api.middleware.auth import require_auth
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -231,15 +231,16 @@ async def agent_self_config(
     agent = await service.get_config_for_agent(agent_id)
 
     # Get data sources linked to this agent with decrypted config
-    from app.infrastructure.repositories.datasource_repo import DataSourceRepository
     from app.application.datasource_service import DataSourceService
+    from app.infrastructure.repositories.datasource_repo import DataSourceRepository
 
     ds_service = DataSourceService(DataSourceRepository(db))
     ds_configs = await ds_service.get_config_for_agent(agent_id)
 
     # Get pipelines linked to any data source of this agent
     from sqlalchemy import select
-    from app.domain.models import Pipeline, DataSource
+
+    from app.domain.models import DataSource, Pipeline
 
     result = await db.execute(
         select(Pipeline).join(DataSource).where(DataSource.agent_id == agent_id)

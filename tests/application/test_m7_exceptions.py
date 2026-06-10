@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.pipeline_runner import PipelineRunService

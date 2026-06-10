@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +22,7 @@ class AnomalyService:
             type=anomaly_data["type"],
             description=anomaly_data.get("description", ""),
             deviation_details=anomaly_data.get("deviation_details", {}),
-            detected_at=datetime.now(timezone.utc),
+            detected_at=datetime.now(UTC),
         )
         anomaly = await self.anomaly_repo.create(anomaly)
         return anomaly

@@ -806,6 +806,9 @@ export const agentHandlers = [
         ]
       ).join('');
 
+    // Small delay to make loading state visible in tests
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     return HttpResponse.json(
       { data: { ...newAgent, agent_token: generatedToken }, error: null },
       { status: 201 }

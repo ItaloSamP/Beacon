@@ -1,13 +1,12 @@
 """Unit tests for HeartbeatService — RED PHASE: module does not exist yet."""
 
 import asyncio
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 # RED PHASE — these imports will fail until the modules are created
 from agent.heartbeat import HeartbeatService  # noqa: E402
-
 
 # ── helpers ───────────────────────────────────────────────────────────
 
@@ -212,7 +211,7 @@ class TestNetworkFailureResilience:
 
     async def test_loop_survives_timeout_error(self):
         client = _make_mock_client()
-        client.send_heartbeat = AsyncMock(side_effect=asyncio.TimeoutError("timed out"))
+        client.send_heartbeat = AsyncMock(side_effect=TimeoutError("timed out"))
         service = _make_service(client=client, interval=0.01)
 
         task = asyncio.create_task(service.start())

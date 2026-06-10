@@ -6,7 +6,6 @@ from agent.profiling.null_check import NullCheckProfiler  # noqa: E402
 
 from .conftest import make_mock_connector
 
-
 # ── NullCheckProfiler ────────────────────────────────────────────────
 
 class TestNullCheckProfiler:

@@ -6,7 +6,6 @@ from agent.profiling.volume import VolumeProfiler  # noqa: E402
 
 from .conftest import make_mock_connector
 
-
 # ── VolumeProfiler ───────────────────────────────────────────────────
 
 class TestVolumeProfiler:

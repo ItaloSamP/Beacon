@@ -6,7 +6,6 @@ from agent.profiling.schema import SchemaProfiler  # noqa: E402
 
 from .conftest import make_mock_connector
 
-
 # ── SchemaProfiler ───────────────────────────────────────────────────
 
 class TestSchemaProfiler:

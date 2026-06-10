@@ -7,8 +7,8 @@ import pytest
 
 # RED PHASE — these imports will fail until the modules are created
 from agent.connectors.postgres import (  # noqa: E402
-    PostgresConnector,
     PostgresConnectionError,
+    PostgresConnector,
     PostgresTimeoutError,
 )
 
@@ -307,14 +307,12 @@ class TestPostgresConnector:
             connector = PostgresConnector()
             config = TestPostgresConnector._make_config()
 
-            import asyncio
             with patch(
                 "asyncpg.connect",
                 new_callable=AsyncMock,
-                side_effect=asyncio.TimeoutError("timed out"),
-            ):
-                with pytest.raises((asyncio.TimeoutError, Exception)):
-                    await connector.connect(config)
+                side_effect=TimeoutError("timed out"),
+            ), pytest.raises((asyncio.TimeoutError, Exception)):
+                await connector.connect(config)
 
         @pytest.mark.asyncio
         async def test_get_tables_without_connect_raises(self):
@@ -348,9 +346,8 @@ class TestPostgresConnector:
                 "asyncpg.connect",
                 new_callable=AsyncMock,
                 side_effect=OSError("Connection refused"),
-            ):
-                with pytest.raises(PostgresConnectionError):
-                    await connector.connect(config)
+            ), pytest.raises(PostgresConnectionError):
+                await connector.connect(config)
 
         @pytest.mark.asyncio
         async def test_connect_timeout_raises_specific_error(self):
@@ -361,10 +358,9 @@ class TestPostgresConnector:
             with patch(
                 "asyncpg.connect",
                 new_callable=AsyncMock,
-                side_effect=asyncio.TimeoutError("timed out"),
-            ):
-                with pytest.raises(PostgresTimeoutError):
-                    await connector.connect(config)
+                side_effect=TimeoutError("timed out"),
+            ), pytest.raises(PostgresTimeoutError):
+                await connector.connect(config)
 
         @pytest.mark.asyncio
         async def test_connect_invalid_credentials_raises_specific_error(self):
@@ -376,9 +372,8 @@ class TestPostgresConnector:
                 "asyncpg.connect",
                 new_callable=AsyncMock,
                 side_effect=OSError("password authentication failed"),
-            ):
-                with pytest.raises(PostgresConnectionError):
-                    await connector.connect(config)
+            ), pytest.raises(PostgresConnectionError):
+                await connector.connect(config)
 
     # ── Config validation ─────────────────────────────────────────────
 

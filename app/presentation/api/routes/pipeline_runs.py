@@ -1,19 +1,19 @@
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db, async_session_factory
-from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
 from app.application.pipeline_runner import PipelineRunService
-from app.presentation.api.middleware.auth import require_auth
 from app.domain.models import PipelineRun, PipelineRunStatus
 from app.domain.schemas import (
     ApiResponse,
     PaginatedApiResponse,
     PipelineRunTriggerResponse,
 )
+from app.infrastructure.database import async_session_factory, get_db
+from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
+from app.presentation.api.middleware.auth import require_auth
 from app.shared.exceptions import NotFoundException
 
 router = APIRouter(tags=["pipeline-runs"])
@@ -55,7 +55,7 @@ async def trigger_pipeline_run(
         pipeline_id=pipeline_id,
         status=PipelineRunStatus.success,
         metrics_json={},
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     run = await run_repo.create(pipeline_run)
 

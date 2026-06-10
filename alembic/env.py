@@ -6,7 +6,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.infrastructure.database import Base
 from app.shared.config import settings
 

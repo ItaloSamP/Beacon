@@ -12,20 +12,21 @@ Tests the core anomaly business logic:
 RED PHASE: All tests WILL FAIL because AnomalyService doesn't exist yet.
 """
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone
 
+import pytest
 
 # RED PHASE imports — modules don't exist yet
 from app.application.anomaly_service import AnomalyService
 from app.domain.models import (
-    Anomaly, AnomalySeverity,
+    Anomaly,
+    AnomalySeverity,
 )
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TestAnomalyService:
