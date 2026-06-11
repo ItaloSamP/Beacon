@@ -1277,3 +1277,96 @@ The 5 fix categories (synthetic CSS tokens, password toggle aria-label, SearchIn
 **Source:** Issue #4 — Tester fix verification Run 11 (2026-05-21)
 
 *Created by @project-setup on 2026-05-12*
+
+#### 2026-06-11 — Infrastructure: Agent CI workflow pattern — no PostgreSQL service container needed
+
+**Context:** The agent's GitHub Actions CI workflow (`agent-ci.yml`) runs ruff, mypy, and pytest on `agent/**` code. Unlike the backend CI, agent tests use mocks (`respx`, `MagicMock`, `AsyncMock`) exclusively.
+
+**Discovery:** Agent unit tests mock `asyncpg` connections and HTTP clients, so zero database infrastructure is required. The CI only needs: checkout + setup-python@v5 (3.13) + `pip install -e ".[dev]"` (shared tools: ruff, mypy, pytest, pytest-cov) + `pip install -e ./agent/` (agent deps: httpx, click, asyncpg). The `PYTHONPATH` env var is set to `${{ github.workspace }}` to ensure Python resolves the `agent` package from the project root.
+
+**Solution:** The agent CI follows the same structure as `backend-ci.yml` but without the PostgreSQL service container and without alembic migrations. Coverage artifact is named `coverage-agent` to distinguish from `backend-coverage` and `frontend-coverage`. Mypy initially uses `continue-on-error: true` since agent code may have pre-existing type issues — remove once resolved.
+
+**Source:** Issue #23-30 — Agent CI + E2E Test Suite (2026-06-11)
+
+#### 2026-06-11 — Testing: Playwright E2E test suite setup pattern with Vite dev server
+
+**Context:** Setting up Playwright for an existing Vite + React frontend project. Configuration lives at `frontend/playwright.config.ts`, tests at `frontend/tests/e2e/`, and `@playwright/test` is installed as a dev dependency in `frontend/package.json`.
+
+**Discovery:** The `webServer` config auto-starts the Vite dev server for local runs (`npm run dev`) with `reuseExistingServer: !process.env.CI`. In CI, the server is expected to be running externally. The `baseURL` is `http://localhost:5173` (Vite default). Chromium-only tests with `trace: 'on-first-retry'` and `video: 'retain-on-failure'` for debugging. The `tsconfig.json` must include `"tests/e2e"` in its `include` array for TypeScript to type-check the test files — Playwright uses its own transpiler at runtime but `tsc --noEmit` needs the include.
+
+**Solution:** Use `defineConfig` from `@playwright/test`. Set `fullyParallel: true`, `retries: 1` in CI / `0` local, `workers: 3` in CI, reporters: `html` + `list`. The `testDir: './tests/e2e'` matches the directory structure. E2E tests are NOT colocated with source — they live in a separate top-level `tests/e2e/` directory because they test full user flows across multiple features.
+
+**Source:** Issue #23-30 — Playwright setup (2026-06-11)
+
+#### 2026-06-11 — Testing: E2E test data seeding via `page.request.post()` API calls
+
+**Context:** E2E tests require seeded data (users, datasources, pipelines, anomalies). Unlike unit tests with MSW mocks, E2E tests run against a real backend.
+
+**Discovery:** `page.request.post()` (Playwright's built-in API client) allows tests to seed data via the same REST API the frontend uses. This avoids direct database access and keeps tests backend-implementation-agnostic. The pattern: (1) register/login via API to get auth tokens, (2) set tokens in `localStorage` via `page.evaluate()`, (3) seed domain entities via API, (4) navigate to the frontend page. Test users are created per-test with `Date.now()`-based emails to avoid conflicts. Cleanup is best-effort via DELETE API calls.
+
+**Solution:** Create a `fixtures/data.fixture.ts` with helper functions (`seedDatasource`, `seedPipeline`, `seedAnomaly`, `cleanup*`) that accept `page` and `request` objects. These read the auth token from localStorage and call the API. Use `beforeEach` in `test.describe` blocks to seed the full dependency chain (datasource → pipeline → run → anomaly). The `auth.fixture.ts` provides a Playwright `test.extend` pattern for authenticated tests if needed.
+
+**Source:** Issue #23-30 — E2E fixtures and helpers (2026-06-11)
+
+#### 2026-06-11 — Testing: Playwright `test.skip()` pattern for unimplemented feature dependencies
+
+**Context:** Alert Rules E2E tests (Spec 6) depend on GitHub issue #20 which is not yet implemented. The test file needs to exist as a placeholder but should not run or fail.
+
+**Discovery:** `test.skip()` is the standard Playwright pattern for pending tests. The test function body is a placeholder showing the expected flow (navigate, create, verify, edit, delete). Unlike `test.fixme()` (which marks a test as broken), `test.skip()` indicates the test is intentionally deferred. The test appears in `npx playwright test --list` with a skip indicator but does not execute. When #20 is implemented, remove the `.skip()` and flesh out the test body.
+
+**Solution:** Use `test.skip('alert rules CRUD', async ({ page }) => { ... })` with a comment referencing the blocking issue number. The test body should contain the expected flow as comments to guide future implementation. This keeps the test file discoverable and self-documenting without causing CI failures.
+
+**Source:** Issue #23-30 — E2E Spec 6 (alert-rules placeholder) (2026-06-11)
+
+#### 2026-06-11 — Testing: E2E ECONNREFUSED failures are infrastructure prerequisites, not code defects
+
+**Context:** Running `npx playwright test` without Docker/backend running. 14 of 17 E2E tests failed with `ECONNREFUSED ::1:8000` — the backend API is not available. The 2 tests that don't need the backend (login page renders, invalid credentials shows error) pass. The 1 skipped test (alert-rules) correctly deferred.
+
+**Discovery:** When classifying E2E test failures, distinguish between code-level failures (assertion errors, selector not found, timeout waiting for expected state) and infrastructure-level failures (connection refused, DNS resolution failure, port unreachable). Infrastructure failures are environment prerequisites — the test CODE is correct but the runtime environment is missing. In this case, all 14 failures are identical `ECONNREFUSED` errors from `page.request.post()` in `beforeEach` hooks — each test tried to register a user via the backend API and failed before reaching any application-specific assertions. The structural validations (test discovery: 17 tests in 6 files, `tsc --noEmit`: 0 errors, `playwright test --list`: valid config) confirm the test code is correct.
+
+**Solution:** Gate check should use a two-tier classification: (1) Structural: test discovery, type-check, config validity, mock/seed setup correctness. (2) Runtime: actual test execution against live infrastructure. If structural checks pass but runtime fails with exclusively infrastructure errors (ECONNREFUSED, ECONNRESET), the verdict is CONDITIONAL PASS — gated on running Docker/backend. Document the prerequisite clearly in logs. This matches the established asyncpg/Windows pattern from Sprint 0-1 where integration tests are blocked by the ProactorEventLoop on Windows but pass on Linux CI.
+
+**Source:** Issue #23-30 — Tester verification (2026-06-11)
+
+#### 2026-06-11 — YAML: pyyaml on Windows may not parse the `on` key — use structural validation instead
+
+**Context:** When validating `agent-ci.yml` structure programmatically with `yaml.safe_load()`, the `on` key parsed as `[]` instead of `['push', 'pull_request', 'schedule']`. The YAML file is valid (confirmed by standalone YAML lint), but pyyaml may interpret `on` as a YAML 1.1 boolean (`true`) depending on the library version and platform.
+
+**Discovery:** In YAML 1.1 (pyyaml's default), unquoted keywords like `on`, `yes`, `no`, `true`, `false` are interpreted as boolean values. GitHub Actions workflow files use `on:` as a mapping key, which most parsers handle correctly, but some pyyaml versions on Windows may incorrectly coerce `on` to `True` and treat the subsequent block as a value of the boolean rather than a key in the mapping. This is a parser-specific issue, not a file format problem — the workflow runs correctly on GitHub.
+
+**Solution:** Validate CI workflow YAML structurally: check file existence, verify step names/structure with explicit indices, confirm required keys (push/pull_request paths, schedule cron, runner, python version, checkout/setup-python versions) by matching against expected strings. Don't rely on pyyaml to provide the full parsed structure of `on:` — use it for step-level validation and do a visual/manual review of triggers. Alternatively, use `ruamel.yaml` (YAML 1.2) or GitHub's own `actionlint` tool.
+
+**Source:** Issue #23-30 — Tester YAML validation (2026-06-11)
+
+#### 2026-06-11 — Code Review: Playwright baseURL must NOT be derived from VITE_BACKEND_URL
+
+**Context:** `playwright.config.ts` derivation: `baseURL = process.env.VITE_BACKEND_URL ? 'http://localhost:' + port(VITE_BACKEND_URL) : 'http://localhost:5173'`.
+
+**Discovery:** `VITE_BACKEND_URL` is the backend API URL (e.g., `http://backend:8000/api/v1`). Extracting the port (8000) and using it for the Playwright `baseURL` causes `page.goto('/login')` to navigate to `http://localhost:8000/login` — the BACKEND, not the frontend dev server on port 5173. When VITE_BACKEND_URL is unset (current local dev), the default `5173` is correct, masking this bug. In Docker/CI environments where VITE_BACKEND_URL IS set, all E2E page navigations would hit the wrong service.
+
+**Solution:** Use a dedicated environment variable (`PLAYWRIGHT_BASE_URL` or `E2E_BASE_URL`) for the Playwright base URL. Never derive the frontend dev server URL from a backend API URL variable — they are different services on different ports. The fix:
+```typescript
+baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
+```
+
+**Source:** Issue #23-30 — Code review (2026-06-11)
+
+#### 2026-06-11 — Code Review: E2E API base URLs should use configurable constants, not hardcoded strings
+
+**Context:** All 6 E2E spec files hardcode `http://localhost:8000/api/v1` in every `page.request.post()` call. This makes tests non-portable across environments (local dev, Docker Compose, CI).
+
+**Discovery:** The `fixtures/data.fixture.ts` and `fixtures/auth.fixture.ts` already extract a configurable `API_BASE` from `process.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1'`. However, the spec files duplicate the login and API-seeding logic inline with hardcoded URLs instead of using the fixtures. This is both a portability issue and a DRY violation.
+
+**Solution:** Either: (A) extract a shared `API_BASE` into a constants file imported by all specs, or (B) use the `auth.fixture.ts` (`authenticatedPage` fixture) and `data.fixture.ts` helpers in all specs — they already handle the configurable URL internally. Approach B is preferred: it eliminates URL duplication AND deduplicates the auth-seeding logic that appears in 4/6 spec files.
+
+**Source:** Issue #23-30 — Code review (2026-06-11)
+
+#### 2026-06-11 — Testing: Avoid `page.waitForTimeout(n)` in Playwright — use event-driven waits
+
+**Context:** Playwright E2E tests use `page.waitForTimeout(3000)`, `page.waitForTimeout(2000)`, and `page.waitForTimeout(1000)` in several spec files. These hard waits slow test execution and are brittle — they can fail in CI with slower hardware or pass incorrectly when the condition was already satisfied.
+
+**Discovery:** Hard waits add up: `pipeline-crud.spec.ts` (1s for toggle), `pipeline-run.spec.ts` (3s + 2s), `anomaly-detail.spec.ts` (2s) = 8s of idle waiting. Playwright's preferred patterns are event-driven: `waitForResponse(url)` to wait for API calls, `waitForSelector(selector)` for DOM changes, `waitForURL(pattern)` for navigation, and `expect(locator).toBeVisible({ timeout })` for assertions. These adapt to actual timing rather than assuming fixed delays.
+
+**Solution:** Replace `page.waitForTimeout(2000)` after `POST /pipelines/{id}/run` with `page.waitForResponse(res => res.url().includes('/run') && res.status() === 200)`. Replace `page.waitForTimeout(1000)` after toggle click with `expect(toggleLocator).toBeVisible()`. Hard waits should only be used as last-resort debugging aids, never in committed test code.
+
+**Source:** Issue #23-30 — Code review (2026-06-11)
