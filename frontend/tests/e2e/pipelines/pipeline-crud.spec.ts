@@ -161,9 +161,6 @@ test.describe('Pipeline CRUD', () => {
         enabled: true,
       },
     });
-    const pipeBody = await createRes.json();
-    const pipelineId = pipeBody.data?.id;
-
     await page.goto('/pipelines');
     await page.waitForLoadState('networkidle');
 
