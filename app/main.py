@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 
 from app.presentation.api.router import router
 from app.shared.config import settings
@@ -38,7 +38,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     errors = exc.errors()
     messages = []
     for err in errors:
-        loc = ".".join(str(l) for l in err["loc"])
+        loc = ".".join(str(part) for part in err["loc"])
         messages.append(f"{loc}: {err['msg']}")
     return JSONResponse(
         status_code=422,

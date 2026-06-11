@@ -3,14 +3,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.models import ApiKey
+from app.domain.schemas import ApiKeyCreate, ApiResponse
 from app.infrastructure.database import get_db
 from app.infrastructure.repositories.api_key_repo import ApiKeyRepository
 from app.infrastructure.security import generate_api_key
 from app.presentation.api.middleware.auth import require_auth
-from app.shared.exceptions import NotFoundException
 from app.shared.config import settings
-from app.domain.models import ApiKey
-from app.domain.schemas import ApiKeyCreate, ApiResponse
+from app.shared.exceptions import NotFoundException
 
 router = APIRouter(prefix="/api-keys", tags=["api_keys"])
 

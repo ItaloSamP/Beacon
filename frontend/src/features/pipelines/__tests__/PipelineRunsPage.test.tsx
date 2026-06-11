@@ -9,8 +9,8 @@
  * - Loading, empty, and error states
  * - Back navigation link
  *
- * RED PHASE: All tests WILL FAIL because the PipelineRunsPage
- * component and its dependencies don't exist yet.
+ * NOTE: Pipeline name is now rendered via PageHeaderContext
+ * (Header component), tested separately in Header.test.tsx.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -78,9 +78,8 @@ describe('PipelineRunsPage', () => {
       renderRunsPage();
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/Daily Volume Check/i)
-        ).toBeInTheDocument();
+        const table = document.querySelector('table');
+        expect(table).toBeInTheDocument();
       });
     });
 
@@ -113,16 +112,6 @@ describe('PipelineRunsPage', () => {
         expect(
           screen.queryByText(/2026-05-14T10:00:05Z/)
         ).toBeInTheDocument();
-      });
-    });
-
-    it('should display pipeline name in header', async () => {
-      renderRunsPage();
-
-      await waitFor(() => {
-        const pipelineNameElements =
-          screen.getAllByText(/Daily Volume Check/i);
-        expect(pipelineNameElements.length).toBeGreaterThan(0);
       });
     });
   });

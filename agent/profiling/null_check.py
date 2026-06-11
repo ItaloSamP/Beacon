@@ -18,7 +18,7 @@ class NullCheckProfiler:
             return {
                 "table": table_name,
                 "null_percentages": {},
-                "profiled_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "profiled_at": datetime.datetime.now(datetime.UTC).isoformat(),
             }
 
         null_percentages = await connector.get_null_counts(table_name, columns)
@@ -26,5 +26,5 @@ class NullCheckProfiler:
         return {
             "table": table_name,
             "null_percentages": null_percentages,
-            "profiled_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "profiled_at": datetime.datetime.now(datetime.UTC).isoformat(),
         }

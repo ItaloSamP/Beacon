@@ -375,7 +375,9 @@ class TestProtectedRouteAccess:
         Accessing a protected route with expired token should return 401.
         """
         import time
+
         import jwt as pyjwt
+
         from app.shared.config import settings
 
         expired_token = pyjwt.encode(

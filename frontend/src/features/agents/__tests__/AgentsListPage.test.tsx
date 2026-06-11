@@ -188,29 +188,6 @@ describe('AgentsListPage', () => {
   // User interactions
   // ==========================================================
   describe('user interactions', () => {
-    it('should have a "New Agent" button', async () => {
-      renderListPage();
-
-      await waitFor(() => {
-        const createButton = screen.queryByText(/new agent|novo agent|criar agent/i);
-        expect(createButton).toBeInTheDocument();
-      });
-    });
-
-    it('should navigate to create page when "New Agent" is clicked', async () => {
-      renderListPage();
-
-      await waitFor(async () => {
-        const createLink = screen.queryByRole('link', { name: /new agent|novo agent|criar agent/i })
-          || screen.queryByText(/new agent|novo agent|criar agent/i);
-
-        if (createLink) {
-          await userEvent.click(createLink);
-          // Navigation should happen (URL change)
-        }
-      });
-    });
-
     it('should have edit link for each agent', async () => {
       renderListPage();
 

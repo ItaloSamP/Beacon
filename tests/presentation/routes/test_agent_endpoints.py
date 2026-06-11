@@ -13,7 +13,7 @@ RED PHASE: All tests WILL FAIL because agent endpoints don't exist yet.
 import pytest
 from httpx import AsyncClient
 
-from tests.conftest import assert_response_shape, assert_error_response
+from tests.conftest import assert_response_shape
 
 
 class TestAgentSelfConfig:
@@ -280,7 +280,7 @@ class TestAgentEndpointAuth:
         """A JWT token (not agent token) on agent endpoint should be rejected."""
         # RED PHASE
         # Register user to get a JWT
-        reg = await async_client.post("/api/v1/auth/register", json={
+        await async_client.post("/api/v1/auth/register", json={
             "email": "wrong-prefix@example.com",
             "password": "StrongPass123!",
             "name": "Wrong Prefix",

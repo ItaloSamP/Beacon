@@ -1,3 +1,4 @@
+from datetime import UTC
 from uuid import UUID
 
 from app.domain.models import Agent
@@ -92,13 +93,14 @@ class AgentService:
 
     async def heartbeat(self, agent_id: UUID) -> Agent:
         """Update agent heartbeat (status=online, last_heartbeat_at=now)."""
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         from app.domain.models import AgentStatus
         agent = await self.repo.get_by_id(agent_id)
         if not agent:
             raise NotFoundException("Agent not found")
         agent.status = AgentStatus.online
-        agent.last_heartbeat_at = datetime.now(timezone.utc)
+        agent.last_heartbeat_at = datetime.now(UTC)
         return await self.repo.update(agent)
 
     async def get_config_for_agent(self, agent_id: UUID) -> dict:

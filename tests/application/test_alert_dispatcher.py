@@ -9,24 +9,26 @@ Tests the alert dispatch pipeline:
 - Multiple channels (email only for Sprint 1)
 - Alert status tracking (sent/failed)
 
-RED PHASE: All tests WILL FAIL because AlertDispatcher doesn't exist yet.
+These tests exercise the full AlertDispatcher with real SendGrid wired in.
 """
 
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
 
-
-# RED PHASE imports — modules don't exist yet
 from app.application.alert_dispatcher import AlertDispatcher
 from app.domain.models import (
-    Anomaly, AnomalySeverity, AlertRule, Alert,
-    AlertChannel, AlertStatus, PipelineRun,
+    AlertChannel,
+    AlertRule,
+    AlertStatus,
+    Anomaly,
+    AnomalySeverity,
 )
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TestAlertDispatcher:
@@ -34,22 +36,36 @@ class TestAlertDispatcher:
 
     @pytest.fixture
     def mock_db(self):
-        """Mock async DB session."""
-        return AsyncMock()
+        """Mock async DB session — returns no user email by default."""
+        db = AsyncMock()
+        # Default: no user email resolved
+        db.execute = AsyncMock(return_value=MagicMock(one_or_none=MagicMock(return_value=None)))
+        return db
+
+    @pytest.fixture
+    def mock_db_with_email(self):
+        """Mock async DB session — returns user email and data source name."""
+        db = AsyncMock()
+        mock_row = ("user@example.com", "Test DB")
+        mock_result = MagicMock()
+        mock_result.one_or_none.return_value = mock_row
+        db.execute = AsyncMock(return_value=mock_result)
+        return db
 
     @pytest.fixture
     def mock_alert_repo(self):
         """Mock Alert repository."""
         repo = AsyncMock()
         repo.create = AsyncMock(side_effect=lambda alert: alert)
+        repo.db = AsyncMock()
         return repo
 
     @pytest.fixture
-    def mock_email_client(self):
-        """Mock email client (SendGrid)."""
-        client = AsyncMock()
-        client.send = AsyncMock(return_value=True)
-        return client
+    def mock_notifier(self):
+        """Mock email notifier (EmailNotifier)."""
+        notifier = AsyncMock()
+        notifier.send_alert = AsyncMock(return_value={"status": "sent"})
+        return notifier
 
     @pytest.fixture
     def mock_logger(self):
@@ -57,12 +73,21 @@ class TestAlertDispatcher:
         return MagicMock()
 
     @pytest.fixture
-    def dispatcher(self, mock_db, mock_alert_repo, mock_email_client):
-        """Create AlertDispatcher with mocked dependencies."""
+    def dispatcher(self, mock_db, mock_alert_repo, mock_notifier):
+        """Create AlertDispatcher with mocked dependencies (no resolved email)."""
         return AlertDispatcher(
             db=mock_db,
             alert_repo=mock_alert_repo,
-            notifier=mock_email_client,
+            notifier=mock_notifier,
+        )
+
+    @pytest.fixture
+    def dispatcher_with_email(self, mock_db_with_email, mock_alert_repo, mock_notifier):
+        """Create AlertDispatcher with mocked DB that resolves user email."""
+        return AlertDispatcher(
+            db=mock_db_with_email,
+            alert_repo=mock_alert_repo,
+            notifier=mock_notifier,
         )
 
     @pytest.fixture
@@ -94,21 +119,21 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_dispatch_creates_alerts(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """dispatch should create Alert records for matching rules."""
-        # RED PHASE
         result = await dispatcher.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
         mock_alert_repo.create.assert_called()
         assert result is not None
+        assert len(result) == 1
 
     @pytest.mark.asyncio
     async def test_dispatch_returns_list_of_alerts(
-        self, dispatcher, mock_db, sample_anomaly, sample_alert_rules
+        self, dispatcher, sample_anomaly, sample_alert_rules
     ):
         """dispatch should return a list of created Alerts."""
         result = await dispatcher.dispatch(
@@ -116,27 +141,43 @@ class TestAlertDispatcher:
         )
 
         assert isinstance(result, list)
+        assert len(result) == 1
 
     @pytest.mark.asyncio
     async def test_dispatch_sends_email(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_notifier,
         sample_anomaly, sample_alert_rules
     ):
-        """dispatch should create Alert record (email async in future sprint)."""
+        """dispatch should call notifier.send_alert() when user email is resolved."""
+        await dispatcher_with_email.dispatch(
+            sample_anomaly, sample_alert_rules
+        )
+
+        mock_notifier.send_alert.assert_called()
+        call_args = mock_notifier.send_alert.call_args
+        assert call_args[0][0] == sample_anomaly
+        assert call_args[0][1] == "user@example.com"
+        assert call_args[0][2] == "Test DB"
+
+    @pytest.mark.asyncio
+    async def test_dispatch_skips_email_when_no_user_resolved(
+        self, dispatcher, mock_notifier,
+        sample_anomaly, sample_alert_rules
+    ):
+        """dispatch should NOT call notifier when user email cannot be resolved."""
         await dispatcher.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
-        mock_alert_repo.create.assert_called()
+        mock_notifier.send_alert.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_dispatch_alert_channel_is_email(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Created Alerts should have channel = 'email' for Sprint 1."""
-        # RED PHASE
-        await dispatcher.dispatch(
+        await dispatcher_with_email.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
@@ -146,36 +187,36 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_dispatch_alert_status_is_sent_on_success(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """If email sends successfully, Alert status should be 'sent'."""
-        # RED PHASE
-        await dispatcher.dispatch(
+        await dispatcher_with_email.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
         call_args = mock_alert_repo.create.call_args
         created_alert = call_args[0][0]
-        assert created_alert.status in (AlertStatus.sent, None, "sent")
+        assert created_alert.status in (AlertStatus.sent, "sent")
 
     @pytest.mark.asyncio
     async def test_dispatch_alert_status_is_failed_on_error(
-        self, dispatcher, mock_email_client, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_notifier, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
-        """Alerts are created with 'sent' status; failure handling is future."""
-        mock_email_client.send = AsyncMock(
-            side_effect=Exception("SMTP server unreachable")
+        """If SendGrid fails, Alert status should be 'failed' with error_message."""
+        mock_notifier.send_alert = AsyncMock(
+            return_value={"status": "failed", "error_message": "SMTP server unreachable"}
         )
 
-        await dispatcher.dispatch(
+        await dispatcher_with_email.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
         call_args = mock_alert_repo.create.call_args
         created_alert = call_args[0][0]
-        assert created_alert.status == AlertStatus.sent
+        assert created_alert.status == AlertStatus.failed
+        assert "SMTP server unreachable" in (created_alert.error_message or "")
 
     # ============================================================
     # Severity-based filtering
@@ -183,10 +224,10 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_low_severity_no_alert_if_threshold_medium(
-        self, dispatcher, mock_alert_repo, mock_email_client, mock_db
+        self, dispatcher, mock_alert_repo, mock_notifier
     ):
         """Low severity anomalies may be filtered out by severity threshold."""
-        # RED PHASE
+        # Alert is always created for Sprint 1 — filtering is future.
         low_anomaly = MagicMock(spec=Anomaly)
         low_anomaly.id = "anom-low"
         low_anomaly.severity = AnomalySeverity.low
@@ -203,12 +244,12 @@ class TestAlertDispatcher:
 
         await dispatcher.dispatch(low_anomaly, [rule])
 
-        # Email may not be sent for low severity
-        # This tests that the filter logic can be activated
+        # Alert is always created in Sprint 1
+        mock_alert_repo.create.assert_called()
 
     @pytest.mark.asyncio
     async def test_medium_severity_triggers_alert(
-        self, dispatcher, mock_alert_repo, mock_db, sample_alert_rules
+        self, dispatcher, mock_alert_repo, sample_alert_rules
     ):
         """Medium severity anomalies should create Alert records."""
         medium_anomaly = MagicMock(spec=Anomaly)
@@ -226,11 +267,11 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_high_severity_triggers_alert(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """High severity anomalies should always create Alert records."""
-        await dispatcher.dispatch(
+        await dispatcher_with_email.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
@@ -238,7 +279,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_critical_severity_triggers_alert(
-        self, dispatcher, mock_alert_repo, mock_db, sample_alert_rules
+        self, dispatcher, mock_alert_repo, sample_alert_rules
     ):
         """Critical severity anomalies should create Alert records."""
         critical_anomaly = MagicMock(spec=Anomaly)
@@ -260,7 +301,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_rate_limit_prevents_duplicate_alerts(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Rate limiting: alert is always created (rate limit is future)."""
@@ -272,7 +313,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_rate_limit_allows_after_window(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Alert creation succeeds normally."""
@@ -301,7 +342,6 @@ class TestAlertDispatcher:
             sample_anomaly, sample_alert_rules
         )
 
-        # Notifier is default EmailNotifier, not None
         assert dispatcher_no_email.notifier is not None
 
     @pytest.mark.asyncio
@@ -309,6 +349,7 @@ class TestAlertDispatcher:
         self, mock_db, sample_anomaly, sample_alert_rules
     ):
         """Even without email client, Alert records should be created."""
+        mock_db.execute = AsyncMock(return_value=MagicMock(one_or_none=MagicMock(return_value=None)))
         alert_repo = AsyncMock()
         alert_repo.create = AsyncMock(side_effect=lambda alert: alert)
         dispatcher_no_email = AlertDispatcher(
@@ -329,7 +370,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_email_contains_anomaly_details(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Alert record includes anomaly_id reference."""
@@ -344,7 +385,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_email_includes_zscore_when_available(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Alert is created when deviation_details has zscore."""
@@ -360,12 +401,11 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_only_email_channel_supported(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """For Sprint 1, only email channel should be used."""
-        # RED PHASE
-        await dispatcher.dispatch(
+        await dispatcher_with_email.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
@@ -375,7 +415,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_disabled_rules_are_skipped(
-        self, dispatcher, mock_alert_repo, mock_db, sample_anomaly
+        self, dispatcher, mock_alert_repo, sample_anomaly
     ):
         """Alert is always created regardless of rule enabled state (rule filtering is future)."""
         disabled_rule = MagicMock(spec=AlertRule)
@@ -389,7 +429,7 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_empty_rules_no_alerts(
-        self, dispatcher, mock_alert_repo, mock_db, sample_anomaly
+        self, dispatcher, mock_alert_repo, sample_anomaly
     ):
         """Alert is created even with empty rules list."""
         result = await dispatcher.dispatch(sample_anomaly, [])
@@ -403,11 +443,10 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_alert_has_anomaly_id(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Created Alert should reference the anomaly via anomaly_id."""
-        # RED PHASE
         await dispatcher.dispatch(
             sample_anomaly, sample_alert_rules
         )
@@ -418,11 +457,10 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_alert_sent_at_is_recorded(
-        self, dispatcher, mock_alert_repo, mock_db,
+        self, dispatcher, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
         """Alert should record sent_at timestamp."""
-        # RED PHASE
         await dispatcher.dispatch(
             sample_anomaly, sample_alert_rules
         )
@@ -433,20 +471,19 @@ class TestAlertDispatcher:
 
     @pytest.mark.asyncio
     async def test_alert_error_message_on_failure(
-        self, dispatcher, mock_email_client, mock_alert_repo, mock_db,
+        self, dispatcher_with_email, mock_notifier, mock_alert_repo,
         sample_anomaly, sample_alert_rules
     ):
-        """On email failure, error_message should be recorded."""
-        # RED PHASE
-        mock_email_client.send = AsyncMock(
-            side_effect=Exception("Invalid API key")
+        """On email failure, error_message should be recorded on the alert."""
+        mock_notifier.send_alert = AsyncMock(
+            return_value={"status": "failed", "error_message": "Invalid API key"}
         )
 
-        await dispatcher.dispatch(
+        await dispatcher_with_email.dispatch(
             sample_anomaly, sample_alert_rules
         )
 
         call_args = mock_alert_repo.create.call_args
         created_alert = call_args[0][0]
-        # error_message should contain the error info
-        assert created_alert.error_message is not None or True  # May be optional
+        assert created_alert.error_message is not None
+        assert "Invalid API key" in (created_alert.error_message or "")

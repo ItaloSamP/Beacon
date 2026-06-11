@@ -7,8 +7,9 @@ Tests:
 RED PHASE: These tests WILL FAIL because the migration 002_add_agents.py doesn't exist yet.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 class TestMigration002Agents:
@@ -164,8 +165,9 @@ class TestAgentModelFromMigration:
         """
         Agent model should have relationships: user, data_sources.
         """
-        from app.domain.models import Agent
         from sqlalchemy.orm import RelationshipProperty
+
+        from app.domain.models import Agent
 
         all_relationships = {
             key: value for key, value in Agent.__mapper__.relationships.items()

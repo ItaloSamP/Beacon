@@ -1,8 +1,8 @@
 """Database connectors for the Beacon local agent."""
 
 from agent.connectors.postgres import (
-    PostgresConnector,
     PostgresConnectionError,
+    PostgresConnector,
     PostgresTimeoutError,
 )
 

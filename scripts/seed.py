@@ -3,8 +3,8 @@ import uuid
 
 from sqlalchemy import select
 
-from app.infrastructure.database import async_session_factory, Base, engine
-from app.domain.models import User, Agent, DataSource, Pipeline
+from app.domain.models import Agent, DataSource, Pipeline, User
+from app.infrastructure.database import Base, async_session_factory, engine
 from app.infrastructure.security import hash_password
 
 
@@ -21,7 +21,7 @@ async def seed():
 
         if existing_user:
             print("Seed data already exists. Nothing to do.")
-            print(f"  Admin user: admin@beacon.dev / admin123 (already present)")
+            print("  Admin user: admin@beacon.dev / admin123 (already present)")
             return
 
         user_id = uuid.uuid4()

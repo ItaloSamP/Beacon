@@ -170,7 +170,7 @@ export const authHandlers = [
 // DataSource handlers
 // ============================================================
 
-let mockDataSources: Array<{
+const mockDataSources: Array<{
   id: string;
   name: string;
   type: string;
@@ -504,7 +504,7 @@ export const healthHandlers = [
 // Pipeline handlers
 // ============================================================
 
-let mockPipelines = [
+const mockPipelines = [
   {
     id: 'pipe-uuid-001',
     name: 'Daily Volume Check',
@@ -677,7 +677,7 @@ export const pipelineHandlers = [
 // Agent handlers
 // ============================================================
 
-let mockAgents: Array<{
+const mockAgents: Array<{
   id: string;
   name: string;
   status: string;
@@ -805,6 +805,9 @@ export const agentHandlers = [
           Math.floor(Math.random() * 36)
         ]
       ).join('');
+
+    // Small delay to make loading state visible in tests
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     return HttpResponse.json(
       { data: { ...newAgent, agent_token: generatedToken }, error: null },
@@ -1005,7 +1008,7 @@ export const alertHandlers = [
 // Anomaly handlers
 // ============================================================
 
-let mockAnomalies: Array<{
+const mockAnomalies: Array<{
   id: string;
   pipeline_run_id: string;
   severity: string;
@@ -1320,7 +1323,7 @@ export const anomalyHandlers = [
 // Pipeline Run handlers
 // ============================================================
 
-let mockPipelineRuns: Array<{
+const mockPipelineRuns: Array<{
   id: string;
   pipeline_id: string;
   pipeline: { id: string; name: string; type: string };
@@ -1424,7 +1427,7 @@ export const pipelineRunHandlers = [
     const page = parseInt(url.searchParams.get('page') || '1');
     const perPage = parseInt(url.searchParams.get('per_page') || '50');
 
-    let filtered = mockPipelineRuns.filter(
+    const filtered = mockPipelineRuns.filter(
       (r) => r.pipeline_id === pipelineId
     );
 
@@ -1487,7 +1490,7 @@ export const dashboardStatsHandlers = [
 // Agent Token handlers
 // ============================================================
 
-let mockAgentTokens: Array<{
+const mockAgentTokens: Array<{
   id: string;
   agent_id: string;
   token_prefix: string;

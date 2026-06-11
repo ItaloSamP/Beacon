@@ -1,34 +1,19 @@
 /**
  * Unit tests for Header component — refined version.
  *
- * Tests: page title rendering, actions area slot, user name
- * display, logout button, mobile menu toggle button, 64px height.
+ * Tests: page title rendering, actions area slot,
+ * mobile menu toggle button, 64px height,
+ * styling, and accessibility.
  *
- * RED PHASE: Tests WILL FAIL because the refined Header
- * component doesn't exist yet with page title, actions slot,
- * and mobile toggle.
+ * NOTE: User name and logout moved to Sidebar.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
 
-// Mock useAuth for Header (it imports from ../../hooks/useAuth)
-vi.mock('../../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { name: 'Test User', email: 'test@example.com' },
-    isAuthenticated: true,
-    isLoading: false,
-    logout: vi.fn(),
-    login: vi.fn(),
-    register: vi.fn(),
-  }),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
-
-// IMPORT THAT WILL FAIL (RED PHASE — refined component doesn't exist)
+// Header no longer depends on useAuth (user/logout moved to Sidebar)
 import { Header } from '../Header';
 
 function renderHeader() {
@@ -75,46 +60,6 @@ describe('Header', () => {
 
       const header = document.querySelector('header');
       expect(header?.className).toMatch(/h-16/);
-    });
-  });
-
-  // ==========================================================
-  // User Name
-  // ==========================================================
-  describe('user display', () => {
-    it('should show the user name', () => {
-      renderHeader();
-
-      expect(screen.getByText('Test User')).toBeInTheDocument();
-    });
-
-    it('should show a user icon', () => {
-      renderHeader();
-
-      // Should have a User icon (lucide)
-      const svg = document.querySelector('header svg');
-      expect(svg).toBeInTheDocument();
-    });
-  });
-
-  // ==========================================================
-  // Logout Button
-  // ==========================================================
-  describe('logout button', () => {
-    it('should render a logout button', () => {
-      renderHeader();
-
-      expect(
-        screen.getByRole('button', { name: /logout/i })
-      ).toBeInTheDocument();
-    });
-
-    it('should have a LogOut icon', () => {
-      renderHeader();
-
-      const logoutBtn = screen.getByRole('button', { name: /logout/i });
-      const svg = logoutBtn.querySelector('svg');
-      expect(svg).toBeInTheDocument();
     });
   });
 

@@ -11,11 +11,9 @@ This script:
 Intended to be called from the backend entrypoint after migrations and seed.
 """
 
-import json
 import os
 import sys
 import time
-from uuid import UUID
 
 import httpx
 

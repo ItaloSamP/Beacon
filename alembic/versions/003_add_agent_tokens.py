@@ -4,12 +4,12 @@ Revision ID: 003
 Revises: 002
 Create Date: 2026-05-14
 """
-from typing import Sequence
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision: str = "003"
 down_revision: str | None = "002"

@@ -4,14 +4,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Spinner } from '../../components/ui/Spinner';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { SearchInput } from '../../components/ui/SearchInput';
+import { FilterBar } from '../../components/ui/FilterBar';
 import { StatusDot } from '../../components/ui/StatusDot';
+import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorPanel } from '../../components/ui/ErrorPanel';
-import { Skeleton } from '../../components/ui/Skeleton';
-import { FilterBar } from '../../components/ui/FilterBar';
+import { Table } from '../../components/ui/Table';
 import { api } from '../../lib/api';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import type { DataSource } from '../../types/datasource';
 import type { PaginatedResponse } from '../../types/api';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
@@ -124,23 +127,24 @@ export function DataSourcesListPage() {
     return sorted;
   }, [dataSources, searchQuery, activeFilters]);
 
+  const headerActions = (
+    <div className="flex items-center gap-3">
+      <SearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search data sources..."
+        aria-label="Search data sources"
+        className="w-64"
+      />
+      <Button onClick={() => navigate('/datasources/new')}>
+        <Plus size={16} className="mr-2" />Add Data Source
+      </Button>
+    </div>
+  );
+  useSetPageHeader('Data Sources', headerActions);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Data Sources</h1>
-        <div className="flex items-center gap-3">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search data sources..."
-            aria-label="Search data sources"
-            className="w-64"
-          />
-          <Button onClick={() => navigate('/datasources/new')}>
-            <Plus size={16} className="mr-2" />+ Add Data Source
-          </Button>
-        </div>
-      </div>
 
       <div className="mb-6">
         <FilterBar onFilterChange={handleFilterChange}>

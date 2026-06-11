@@ -9,18 +9,18 @@ These fixtures provide:
 """
 
 import os
+
 os.environ["EMAIL_CHECK_DELIVERABILITY"] = "false"
 
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 
-from httpx import AsyncClient, ASGITransport
+from app.infrastructure.database import Base, async_session_factory, engine, get_db
 
 # ============================================================
 # IMPORTS THAT WILL FAIL (RED PHASE — modules don't exist yet)
 # ============================================================
 from app.main import app
-from app.infrastructure.database import get_db, engine, Base, async_session_factory
-
 
 # ============================================================
 # Override the get_db dependency for testing
@@ -201,6 +201,65 @@ async def sample_pipeline(async_client: AsyncClient, auth_headers: dict, sample_
         "/api/v1/pipelines", json=payload, headers=auth_headers
     )
     assert response.status_code == 201, f"Failed to create sample pipeline: {response.json()}"
+
+    return response.json()["data"]
+
+
+@pytest_asyncio.fixture(scope="function")
+async def sample_pipeline_run(async_client: AsyncClient, auth_headers: dict, sample_pipeline: dict) -> dict:
+    """
+    Trigger a pipeline run and return the run data dict.
+
+    Depends on sample_pipeline for the FK reference.
+    """
+    pipeline_id = sample_pipeline["id"]
+
+    response = await async_client.post(
+        f"/api/v1/pipelines/{pipeline_id}/run", headers=auth_headers
+    )
+    assert response.status_code == 202, (
+        f"Failed to trigger pipeline run: {response.json()}"
+    )
+
+    data = response.json()["data"]
+    run_id = data["run_id"]
+
+    return {
+        "id": run_id,
+        "pipeline_id": pipeline_id,
+        "status": data["status"],
+    }
+
+
+@pytest_asyncio.fixture(scope="function")
+async def sample_anomaly(
+    async_client: AsyncClient, agent_token: dict, sample_pipeline_run: dict
+) -> dict:
+    """
+    Create a sample Anomaly via the API using agent token and return its data dict.
+
+    Depends on agent_token (for auth) and sample_pipeline_run (for FK).
+    Agent token is required by M-4: only agents can create anomalies.
+    """
+    payload = {
+        "pipeline_run_id": sample_pipeline_run["id"],
+        "severity": "high",
+        "type": "volume",
+        "description": "Test anomaly for integration tests",
+        "deviation_details": {
+            "expected": 1000,
+            "actual": 400,
+            "deviation_pct": -60,
+            "zscore": -3.5,
+        },
+    }
+
+    response = await async_client.post(
+        "/api/v1/anomalies", json=payload, headers=agent_token["headers"]
+    )
+    assert response.status_code == 201, (
+        f"Failed to create sample anomaly: {response.json()}"
+    )
 
     return response.json()["data"]
 

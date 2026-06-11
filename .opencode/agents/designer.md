@@ -1,7 +1,7 @@
 ---
 description: Designer agent. Consumes Feature Briefs and requirements, reads the Figma design system, builds production-grade HTML with design tokens, and pushes it into Figma. End-to-end design creation: requirements → design system analysis → HTML → Figma.
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true

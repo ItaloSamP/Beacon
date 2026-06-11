@@ -1,9 +1,15 @@
-from pydantic import BaseModel, EmailStr, field_validator
-from typing import Any, Optional
-from uuid import UUID
 from datetime import datetime
+from typing import Any
+from uuid import UUID
 
-from app.domain.models import DataSourceType, DataSourceStatus, PipelineType, AgentStatus
+from pydantic import BaseModel, EmailStr, field_validator
+
+from app.domain.models import (
+    AgentStatus,
+    DataSourceStatus,
+    DataSourceType,
+    PipelineType,
+)
 
 
 class ApiResponse(BaseModel):
@@ -81,7 +87,7 @@ class RefreshResponse(ApiResponse):
 class DataSourceCreate(BaseModel):
     name: str
     type: DataSourceType
-    agent_id: Optional[UUID] = None
+    agent_id: UUID | None = None
     connection_config: dict = {}
     status: DataSourceStatus = DataSourceStatus.active
 
@@ -94,19 +100,19 @@ class DataSourceCreate(BaseModel):
 
 
 class DataSourceUpdate(BaseModel):
-    name: Optional[str] = None
-    type: Optional[DataSourceType] = None
-    agent_id: Optional[UUID] = None
-    connection_config: Optional[dict] = None
-    status: Optional[DataSourceStatus] = None
+    name: str | None = None
+    type: DataSourceType | None = None
+    agent_id: UUID | None = None
+    connection_config: dict | None = None
+    status: DataSourceStatus | None = None
 
 
 class DataSourceResponse(BaseModel):
     id: str
     name: str
     type: str
-    agent_id: Optional[str] = None
-    agent: Optional[dict] = None
+    agent_id: str | None = None
+    agent: dict | None = None
     connection_config: dict
     status: str
     created_at: datetime
@@ -126,7 +132,7 @@ class PipelineCreate(BaseModel):
     name: str
     type: PipelineType
     data_source_id: UUID
-    schedule: Optional[str] = None
+    schedule: str | None = None
     config: dict = {}
     enabled: bool = True
 
@@ -139,11 +145,11 @@ class PipelineCreate(BaseModel):
 
 
 class PipelineUpdate(BaseModel):
-    name: Optional[str] = None
-    type: Optional[PipelineType] = None
-    schedule: Optional[str] = None
-    config: Optional[dict] = None
-    enabled: Optional[bool] = None
+    name: str | None = None
+    type: PipelineType | None = None
+    schedule: str | None = None
+    config: dict | None = None
+    enabled: bool | None = None
 
 
 class PipelineResponse(BaseModel):
@@ -151,7 +157,7 @@ class PipelineResponse(BaseModel):
     name: str
     type: str
     data_source_id: str
-    schedule: Optional[str] = None
+    schedule: str | None = None
     config: dict
     enabled: bool
     created_at: datetime
@@ -161,12 +167,12 @@ class PipelineResponse(BaseModel):
 
 
 class PipelineDetailResponse(PipelineResponse):
-    data_source: Optional[DataSourceNested] = None
+    data_source: DataSourceNested | None = None
 
 
 class ApiKeyCreate(BaseModel):
     name: str
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
     @field_validator("name")
     @classmethod
@@ -181,7 +187,7 @@ class ApiKeyFullResponse(BaseModel):
     name: str
     prefix: str
     key: str
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -191,8 +197,8 @@ class ApiKeyListResponse(BaseModel):
     id: str
     name: str
     prefix: str
-    last_used_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
+    last_used_at: datetime | None = None
+    expires_at: datetime | None = None
     revoked: bool
     created_at: datetime
 
@@ -202,7 +208,7 @@ class ApiKeyListResponse(BaseModel):
 class AgentCreate(BaseModel):
     name: str
     status: AgentStatus = AgentStatus.offline
-    version: Optional[str] = None
+    version: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -213,13 +219,13 @@ class AgentCreate(BaseModel):
 
 
 class AgentUpdate(BaseModel):
-    name: Optional[str] = None
-    status: Optional[AgentStatus] = None
-    version: Optional[str] = None
+    name: str | None = None
+    status: AgentStatus | None = None
+    version: str | None = None
 
     @field_validator("name")
     @classmethod
-    def name_not_empty(cls, v: Optional[str]) -> Optional[str]:
+    def name_not_empty(cls, v: str | None) -> str | None:
         if v is not None and (not v or not v.strip()):
             raise ValueError("name must not be empty")
         return v
@@ -230,8 +236,8 @@ class AgentResponse(BaseModel):
     name: str
     status: str
     user_id: str
-    last_heartbeat_at: Optional[datetime] = None
-    version: Optional[str] = None
+    last_heartbeat_at: datetime | None = None
+    version: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -241,7 +247,7 @@ class AgentTokenResponse(BaseModel):
     id: str
     token_prefix: str
     name: str
-    last_used_at: Optional[datetime] = None
+    last_used_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -251,8 +257,8 @@ class AnomalyCreate(BaseModel):
     pipeline_run_id: str
     type: str
     severity: str
-    description: Optional[str] = None
-    deviation_details: Optional[dict] = None
+    description: str | None = None
+    deviation_details: dict | None = None
 
 
 class AnomalyResponse(BaseModel):
@@ -260,10 +266,10 @@ class AnomalyResponse(BaseModel):
     pipeline_run_id: str
     severity: str
     type: str
-    description: Optional[str] = None
-    deviation_details: Optional[dict] = None
-    detected_at: Optional[datetime] = None
-    resolved_at: Optional[datetime] = None
+    description: str | None = None
+    deviation_details: dict | None = None
+    detected_at: datetime | None = None
+    resolved_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -278,11 +284,11 @@ class PipelineRunTriggerResponse(BaseModel):
 class PipelineRunResponse(BaseModel):
     id: str
     pipeline_id: str
-    pipeline: Optional[PipelineResponse] = None
+    pipeline: PipelineResponse | None = None
     status: str
-    metrics_json: Optional[dict] = None
-    started_at: Optional[datetime] = None
-    finished_at: Optional[datetime] = None
+    metrics_json: dict | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -295,9 +301,9 @@ class AlertResponse(BaseModel):
     id: str
     anomaly_id: str
     channel: str
-    sent_at: Optional[datetime] = None
+    sent_at: datetime | None = None
     status: str
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -311,7 +317,7 @@ class AlertRuleResponse(BaseModel):
     id: str
     pipeline_id: str
     condition: str
-    channels: Optional[list] = None
+    channels: list | None = None
     enabled: bool = True
 
     model_config = {"from_attributes": True}

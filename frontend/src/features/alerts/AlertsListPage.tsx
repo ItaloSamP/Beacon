@@ -10,6 +10,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorPanel } from '../../components/ui/ErrorPanel';
 import { api } from '../../lib/api';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 
 interface AlertItem {
   id: string;
@@ -80,10 +81,10 @@ export function AlertsListPage() {
     }
   };
 
+  useSetPageHeader('Alerts');
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Alerts</h1>
-
       <Card className="p-4 mb-6">
         <FilterBar onFilterChange={handleFilterChange}>
           <FilterBar.Group label="Channel">

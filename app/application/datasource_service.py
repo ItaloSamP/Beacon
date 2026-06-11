@@ -1,24 +1,32 @@
 from __future__ import annotations
 
+import json
 from uuid import UUID
 
+from cryptography.fernet import InvalidToken
 
-from app.domain.models import DataSource, Agent
+from app.domain.models import Agent, DataSource
 from app.infrastructure.repositories.datasource_repo import DataSourceRepository
-from app.shared.exceptions import NotFoundException, BadRequestException
+from app.shared.exceptions import BadRequestException, NotFoundException
 
 
 class DataSourceService:
     def __init__(self, repo: DataSourceRepository):
         self.repo = repo
 
-    async def get_by_id(self, id: UUID) -> DataSource:
+    async def get_by_id(self, id: UUID, user_id: UUID | None = None) -> DataSource:
         ds = await self.repo.get_by_id(id)
         if not ds:
             raise NotFoundException("Data source not found")
         # Eager load agent if linked
         if ds.agent_id:
             await self.repo.db.refresh(ds, ["agent"])
+        # M-3: Verify ownership — only return decrypted config if user owns the agent
+        if user_id is not None:
+            if not ds.agent_id or ds.agent is None:
+                raise NotFoundException("Data source not found")
+            if str(ds.agent.user_id) != str(user_id):
+                raise NotFoundException("Data source not found")
         # Decrypt connection_config for detail view
         ds.connection_config = self._decrypt_config_fields(ds.connection_config)
         return ds
@@ -107,8 +115,8 @@ class DataSourceService:
             from app.infrastructure.crypto import decrypt_config
             try:
                 return decrypt_config(config["_encrypted"])
-            except Exception:
-                # If decryption fails, return as-is
+            except (InvalidToken, ValueError, json.JSONDecodeError):
+                # Expected decryption failure — return as-is
                 return config
         return config
 

@@ -1,14 +1,14 @@
 import hashlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from fastapi import Request, Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database import get_db
 from app.infrastructure.repositories.api_key_repo import ApiKeyRepository
 from app.infrastructure.security import decode_token
-from app.shared.exceptions import UnauthorizedException
 from app.shared.config import settings
+from app.shared.exceptions import UnauthorizedException
 
 
 async def require_auth(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
@@ -26,10 +26,10 @@ async def require_auth(request: Request, db: AsyncSession = Depends(get_db)) -> 
         if not key_obj or key_obj.revoked:
             raise UnauthorizedException("Not authenticated")
 
-        if key_obj.expires_at and key_obj.expires_at < datetime.now(timezone.utc):
+        if key_obj.expires_at and key_obj.expires_at < datetime.now(UTC):
             raise UnauthorizedException("Not authenticated")
 
-        key_obj.last_used_at = datetime.now(timezone.utc)
+        key_obj.last_used_at = datetime.now(UTC)
         await repo.update(key_obj)
 
         return {"user_id": str(key_obj.user_id), "auth_method": "api_key"}
@@ -48,11 +48,16 @@ async def require_auth(request: Request, db: AsyncSession = Depends(get_db)) -> 
     except Exception:
         # Try agent token
         if token.startswith(settings.AGENT_TOKEN_PREFIX):
-            from app.infrastructure.repositories.agent_token_repo import AgentTokenRepository
+            from app.infrastructure.repositories.agent_token_repo import (
+                AgentTokenRepository,
+            )
             token_hash = hashlib.sha256(token.encode()).hexdigest()
             repo = AgentTokenRepository(db)
             agent_token_obj = await repo.get_by_token_hash(token_hash)
             if agent_token_obj and agent_token_obj.agent:
+                # Update last_used_at inline
+                agent_token_obj.last_used_at = datetime.now(UTC)
+                await repo.update_last_used(agent_token_obj.id)
                 return {
                     "agent_id": str(agent_token_obj.agent_id),
                     "user_id": str(agent_token_obj.agent.user_id),

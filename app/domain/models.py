@@ -1,16 +1,17 @@
-import uuid
 import enum
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.infrastructure.database import Base
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class AgentStatus(str, enum.Enum):
@@ -151,6 +152,8 @@ class Alert(Base):
     sent_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(SAEnum(AlertStatus), nullable=False, default=AlertStatus.sent)
     error_message = Column(String(500), nullable=True)
+
+    anomaly = relationship("Anomaly")
 
 
 class AlertRule(Base):

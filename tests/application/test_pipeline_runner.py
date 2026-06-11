@@ -15,21 +15,24 @@ Tests the core pipeline runner:
 RED PHASE: All tests WILL FAIL because PipelineRunService doesn't exist yet.
 """
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, timezone
 
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 # RED PHASE imports — modules don't exist yet
 from app.application.pipeline_runner import PipelineRunService
 from app.domain.models import (
-    Pipeline, PipelineRun, PipelineRunStatus, PipelineType,
-    Anomaly, AnomalySeverity, AlertRule, AlertChannel,
+    Pipeline,
+    PipelineRun,
+    PipelineRunStatus,
+    PipelineType,
 )
 
 
 def utcnow():
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TestPipelineRunService:
@@ -224,7 +227,7 @@ class TestPipelineRunService:
         mock_datasource.id = "ds-uuid-001"
         mock_datasource_repo.get_by_id = AsyncMock(return_value=mock_datasource)
 
-        result = await service.run_pipeline(sample_pipeline.id)
+        await service.run_pipeline(sample_pipeline.id)
 
         # update_status was called with SUCCESS
         mock_run_repo.update_status.assert_called()
@@ -255,7 +258,7 @@ class TestPipelineRunService:
         """When an exception occurs, status should transition to 'error'."""
         mock_pipeline_repo.get_by_id = AsyncMock(return_value=sample_pipeline)
         mock_datasource_repo.get_by_id = AsyncMock(
-            side_effect=RuntimeError("Database unreachable")
+            side_effect=SQLAlchemyError("Database unreachable")
         )
 
         await service.run_pipeline(sample_pipeline.id)
@@ -366,7 +369,7 @@ class TestPipelineRunService:
         mock_datasource.id = "ds-uuid-001"
         mock_datasource_repo.get_by_id = AsyncMock(return_value=mock_datasource)
 
-        result = await service.run_pipeline(sample_pipeline.id)
+        await service.run_pipeline(sample_pipeline.id)
 
         mock_run_repo.update_status.assert_called()
         call_args = mock_run_repo.update_status.call_args
@@ -381,7 +384,7 @@ class TestPipelineRunService:
         mock_pipeline_repo.get_by_id = AsyncMock(return_value=sample_pipeline)
         mock_datasource_repo.get_by_id = AsyncMock(return_value=None)
 
-        result = await service.run_pipeline(sample_pipeline.id)
+        await service.run_pipeline(sample_pipeline.id)
 
         # Status should be error since datasource lookup failed inside try block
         mock_run_repo.update_status.assert_called()
@@ -415,7 +418,7 @@ class TestPipelineRunService:
         """When datasource lookup fails, run status should be ERROR."""
         mock_pipeline_repo.get_by_id = AsyncMock(return_value=sample_pipeline)
         mock_datasource_repo.get_by_id = AsyncMock(
-            side_effect=RuntimeError("Connection failure")
+            side_effect=SQLAlchemyError("Connection failure")
         )
 
         await service.run_pipeline(sample_pipeline.id)

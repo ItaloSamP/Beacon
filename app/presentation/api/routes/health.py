@@ -1,18 +1,18 @@
-from fastapi import APIRouter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+from fastapi import APIRouter
 from sqlalchemy import text
 
-from app.shared.config import settings
 from app.infrastructure.database import engine
+from app.shared.config import settings
 
 router = APIRouter()
-_start_time = datetime.now(timezone.utc)
+_start_time = datetime.now(UTC)
 
 
 @router.get("/health")
 async def health():
-    uptime = (datetime.now(timezone.utc) - _start_time).total_seconds()
+    uptime = (datetime.now(UTC) - _start_time).total_seconds()
     db_status = "connected"
     try:
         async with engine.connect() as conn:
@@ -26,7 +26,7 @@ async def health():
             "version": settings.APP_VERSION,
             "uptime_seconds": uptime,
             "database": db_status,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
         "error": None,
     }

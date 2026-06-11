@@ -5,7 +5,6 @@ import pytest
 # RED PHASE — these imports will fail until the modules are created
 from agent.detection import AnomalyDetector, DetectedAnomaly, Severity  # noqa: E402
 
-
 # ── helpers ──────────────────────────────────────────────────────────
 
 def _make_profile_result(tables: dict = None):

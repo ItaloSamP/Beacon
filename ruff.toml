@@ -1,0 +1,28 @@
+target-version = "py313"
+line-length = 88
+
+[lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+
+[lint.per-file-ignores]
+"tests/**" = ["S101", "E501", "B017"]
+"alembic/**" = ["F401", "E501"]
+"app/infrastructure/notifiers/email.py" = ["E501"]
+"app/presentation/**" = ["B008", "B904"]
+"app/shared/exceptions.py" = ["N818", "E501"]
+"scripts/**" = ["E501"]
+"app/domain/models.py" = ["E501", "UP042"]
+"app/infrastructure/repositories/**" = ["E501"]
+"app/infrastructure/database.py" = ["E501"]
+"app/infrastructure/security.py" = ["E501"]
+"app/infrastructure/connectors/**" = ["E501"]
+"app/application/**" = ["E501", "B904"]
+"app/presentation/api/routes/**" = ["E501", "B008", "B904", "SIM105"]
+"app/presentation/api/middleware/auth.py" = ["E501", "B008", "B904"]
+"app/main.py" = ["E501"]
+"agent/*.py" = ["E501", "B904", "SIM105", "SIM108"]
+"agent/tests/**" = ["E501", "F841", "SIM117", "N802"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

@@ -3,18 +3,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db
-from app.infrastructure.repositories.anomaly_repo import AnomalyRepository
-from app.infrastructure.repositories.alert_repo import AlertRepository
 from app.application.anomaly_service import AnomalyService
-from app.application.alert_dispatcher import AlertDispatcher
-from app.presentation.api.middleware.auth import require_auth
-from app.shared.exceptions import NotFoundException
 from app.domain.schemas import (
     AnomalyCreate,
     ApiResponse,
     PaginatedApiResponse,
 )
+from app.infrastructure.database import get_db
+from app.presentation.api.middleware.auth import require_auth
+from app.shared.exceptions import NotFoundException
 
 router = APIRouter(prefix="/anomalies", tags=["anomalies"])
 
@@ -39,8 +36,9 @@ async def list_recent_anomalies(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     service = AnomalyService(db)
-    items = await service.anomaly_repo.list_recent(limit=limit)
+    items = await service.anomaly_repo.list_recent(limit=limit, user_id=user_id)
     data_list = [_serialize_anomaly(a) for a in items]
     return ApiResponse(data=data_list, error=None)
 
@@ -55,6 +53,7 @@ async def list_anomalies(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     service = AnomalyService(db)
     result = await service.list_anomalies(
         page=page,
@@ -62,12 +61,20 @@ async def list_anomalies(
         severity=severity,
         type=type,
         resolved=resolved,
+        user_id=user_id,
     )
     data_list = [_serialize_anomaly(a) for a in result["data"]]
 
+    active_count = await service.anomaly_repo.count_unresolved(user_id=user_id)
+
     return PaginatedApiResponse(
         data=data_list,
-        meta={"page": page, "per_page": per_page, "total": result["total"]},
+        meta={
+            "page": page,
+            "per_page": per_page,
+            "total": result["total"],
+            "active_count": active_count,
+        },
         error=None,
     )
 
@@ -78,8 +85,9 @@ async def get_anomaly(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     service = AnomalyService(db)
-    anomaly = await service.get_anomaly(id)
+    anomaly = await service.get_anomaly(id, user_id=user_id)
     if not anomaly:
         raise NotFoundException("Anomaly not found")
 
@@ -92,6 +100,17 @@ async def create_anomaly(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    # M-4: Only agent tokens can upload anomalies
+    if _user.get("auth_method") != "agent_token":
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "data": None,
+                "error": "agent_token_required",
+                "message": "This endpoint requires an agent token.",
+            },
+        )
     service = AnomalyService(db)
     anomaly = await service.process_anomaly({
         "pipeline_run_id": req.pipeline_run_id,
@@ -110,8 +129,9 @@ async def resolve_anomaly(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     service = AnomalyService(db)
-    anomaly = await service.resolve_anomaly(id)
+    anomaly = await service.resolve_anomaly(id, user_id=user_id)
     if not anomaly:
         raise NotFoundException("Anomaly not found")
 

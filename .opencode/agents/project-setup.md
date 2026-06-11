@@ -1,7 +1,7 @@
 ---
 description: Project context manager. Run ANY TIME to create or update PROJECT_CONTEXT.md. Analyzes codebase, detects stack, defines architecture, fills gaps. Can be invoked repeatedly — detects what's missing and only asks about unfilled sections.
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.models import Anomaly, AnomalySeverity
+from app.domain.models import Anomaly
 from app.infrastructure.repositories.anomaly_repo import AnomalyRepository
 
 
@@ -21,7 +22,7 @@ class AnomalyService:
             type=anomaly_data["type"],
             description=anomaly_data.get("description", ""),
             deviation_details=anomaly_data.get("deviation_details", {}),
-            detected_at=datetime.now(timezone.utc),
+            detected_at=datetime.now(UTC),
         )
         anomaly = await self.anomaly_repo.create(anomaly)
         return anomaly
@@ -33,13 +34,14 @@ class AnomalyService:
         severity: str | None = None,
         type: str | None = None,
         resolved: bool | None = None,
+        user_id: UUID | None = None,
     ):
         return await self.anomaly_repo.list_all(
-            page, per_page, severity, type, resolved
+            page, per_page, severity, type, resolved, user_id=user_id
         )
 
-    async def get_anomaly(self, anomaly_id: str) -> Anomaly | None:
-        return await self.anomaly_repo.get_by_id(anomaly_id)
+    async def get_anomaly(self, anomaly_id: str, user_id: UUID | None = None) -> Anomaly | None:
+        return await self.anomaly_repo.get_by_id(anomaly_id, user_id=user_id)
 
-    async def resolve_anomaly(self, anomaly_id: str) -> Anomaly | None:
-        return await self.anomaly_repo.resolve(anomaly_id)
+    async def resolve_anomaly(self, anomaly_id: str, user_id: UUID | None = None) -> Anomaly | None:
+        return await self.anomaly_repo.resolve(anomaly_id, user_id=user_id)

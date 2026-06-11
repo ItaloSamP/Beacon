@@ -1,7 +1,7 @@
 ---
 description: Product & UX discovery agent. Discusses ideas, scope, and business rules with the user BEFORE any code is written. Refines WHAT needs to be built. Can generate a Project Brief via the project-brief skill.
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true

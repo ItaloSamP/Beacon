@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   Zap,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 interface SidebarProps {
   user?: { name: string } | null;
@@ -29,6 +31,7 @@ const navItems = [
 
 export function Sidebar({ user, anomalyCount = 0 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <aside
@@ -88,11 +91,21 @@ export function Sidebar({ user, anomalyCount = 0 }: SidebarProps) {
         <div className="flex items-center gap-3">
           <User size={20} className="text-gray-400 shrink-0" />
           {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {user?.name || 'User'}
-              </p>
-            </div>
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {user?.name || 'User'}
+                </p>
+              </div>
+              <button
+                onClick={logout}
+                className="text-sm text-gray-400 hover:text-white transition-colors shrink-0"
+                aria-label="Sair"
+                type="button"
+              >
+                <LogOut size={16} />
+              </button>
+            </>
           )}
         </div>
       </div>

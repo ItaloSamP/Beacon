@@ -15,7 +15,7 @@ RED PHASE: All tests WILL FAIL because pipeline run routes don't exist yet.
 import pytest
 from httpx import AsyncClient
 
-from tests.conftest import assert_response_shape, assert_error_response
+from tests.conftest import assert_response_shape
 
 
 class TestTriggerPipelineRun:
@@ -102,7 +102,6 @@ class TestTriggerPipelineRun:
     ):
         """Triggering a disabled pipeline should return 400 or 409."""
         # RED PHASE — create a disabled pipeline
-        from tests.conftest import sample_datasource
 
         # We need a datasource first; since we can't depend on sample_datasource
         # without the fixture cascade, create inline
@@ -376,7 +375,7 @@ class TestRecentPipelineRuns:
 
         run_ids = [run["id"] for run in response.json()["data"]]
         assert sample_pipeline_run["id"] in run_ids, (
-            f"Created run should appear in recent list"
+            "Created run should appear in recent list"
         )
 
     @pytest.mark.asyncio
@@ -450,7 +449,7 @@ class TestPipelineRunAuth:
             f"/api/v1/pipelines/{pipe_id}/run", headers=headers_a
         )
         assert run_resp.status_code == 202
-        a_run_id = run_resp.json()["data"]["run_id"]
+        _a_run_id = run_resp.json()["data"]["run_id"]
 
         # Register user B
         reg_b = await async_client.post("/api/v1/auth/register", json={
@@ -528,6 +527,142 @@ class TestPipelineRunAuth:
             f"/api/v1/pipelines/{pipe_id}/run", headers=headers_b
         )
         assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_user_cannot_get_other_users_pipeline_run(
+        self, async_client: AsyncClient, test_db
+    ):
+        """User B should get 404 on GET /pipeline-runs/{run_id} for A's run."""
+        # Register User A, create agent→ds→pipeline→run
+        reg_a = await async_client.post("/api/v1/auth/register", json={
+            "email": "getrun-user-a@example.com",
+            "password": "StrongPass123!",
+            "name": "GetRun User A",
+        })
+        token_a = reg_a.json()["data"]["access_token"]
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+
+        agent_resp = await async_client.post(
+            "/api/v1/agents",
+            json={"name": "A's Agent", "status": "online"},
+            headers=headers_a,
+        )
+        agent_id = agent_resp.json()["data"]["id"]
+
+        ds_resp = await async_client.post(
+            "/api/v1/datasources",
+            json={
+                "name": "A's DS", "type": "postgres",
+                "connection_config": {}, "status": "active",
+                "agent_id": agent_id,
+            },
+            headers=headers_a,
+        )
+        ds_id = ds_resp.json()["data"]["id"]
+
+        pipe_resp = await async_client.post(
+            "/api/v1/pipelines",
+            json={
+                "name": "A's Pipe", "type": "volume",
+                "data_source_id": ds_id, "config": {},
+            },
+            headers=headers_a,
+        )
+        pipe_id = pipe_resp.json()["data"]["id"]
+
+        run_resp = await async_client.post(
+            f"/api/v1/pipelines/{pipe_id}/run", headers=headers_a
+        )
+        a_run_id = run_resp.json()["data"]["run_id"]
+
+        # Register User B
+        reg_b = await async_client.post("/api/v1/auth/register", json={
+            "email": "getrun-user-b@example.com",
+            "password": "StrongPass123!",
+            "name": "GetRun User B",
+        })
+        token_b = reg_b.json()["data"]["access_token"]
+        headers_b = {"Authorization": f"Bearer {token_b}"}
+
+        # User B tries to get A's run → 404
+        get_b = await async_client.get(
+            f"/api/v1/pipeline-runs/{a_run_id}", headers=headers_b
+        )
+        assert get_b.status_code == 404, (
+            f"Expected 404 for cross-user run access, got {get_b.status_code}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_user_recent_runs_are_isolated(
+        self, async_client: AsyncClient, test_db
+    ):
+        """Pipeline-runs/recent should be isolated per user."""
+        # User A: create agent→ds→pipeline→run
+        reg_a = await async_client.post("/api/v1/auth/register", json={
+            "email": "recentrun-user-a@example.com",
+            "password": "StrongPass123!",
+            "name": "RecentRun User A",
+        })
+        token_a = reg_a.json()["data"]["access_token"]
+        headers_a = {"Authorization": f"Bearer {token_a}"}
+
+        agent_resp = await async_client.post(
+            "/api/v1/agents",
+            json={"name": "A's Agent", "status": "online"},
+            headers=headers_a,
+        )
+        agent_id = agent_resp.json()["data"]["id"]
+
+        ds_resp = await async_client.post(
+            "/api/v1/datasources",
+            json={
+                "name": "A's DS", "type": "postgres",
+                "connection_config": {}, "status": "active",
+                "agent_id": agent_id,
+            },
+            headers=headers_a,
+        )
+        ds_id = ds_resp.json()["data"]["id"]
+
+        pipe_resp = await async_client.post(
+            "/api/v1/pipelines",
+            json={
+                "name": "A's Pipe", "type": "volume",
+                "data_source_id": ds_id, "config": {},
+            },
+            headers=headers_a,
+        )
+        pipe_id = pipe_resp.json()["data"]["id"]
+
+        run_resp = await async_client.post(
+            f"/api/v1/pipelines/{pipe_id}/run", headers=headers_a
+        )
+        a_run_id = run_resp.json()["data"]["run_id"]
+
+        # Register User B
+        reg_b = await async_client.post("/api/v1/auth/register", json={
+            "email": "recentrun-user-b@example.com",
+            "password": "StrongPass123!",
+            "name": "RecentRun User B",
+        })
+        token_b = reg_b.json()["data"]["access_token"]
+        headers_b = {"Authorization": f"Bearer {token_b}"}
+
+        # User B recent runs should not include A's run
+        list_b = await async_client.get(
+            "/api/v1/pipeline-runs/recent?limit=50", headers=headers_b
+        )
+        run_ids = [r["id"] for r in list_b.json()["data"]]
+        assert a_run_id not in run_ids, (
+            "User B should not see user A's pipeline runs in recent"
+        )
+
+        # User A should see their own run
+        list_a = await async_client.get(
+            "/api/v1/pipeline-runs/recent?limit=50", headers=headers_a
+        )
+        a_run_ids = [r["id"] for r in list_a.json()["data"]]
+        assert a_run_id in a_run_ids, "User A should see their own run"
 
 
 class TestPipelineRunValidation:

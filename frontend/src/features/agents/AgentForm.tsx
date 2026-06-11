@@ -8,6 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Spinner';
 import { api } from '../../lib/api';
 import type { Agent, CreateAgentRequest, AgentStatus } from '../../types/agent';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import type { ApiResponse } from '../../types/api';
 
 const STATUS_OPTIONS = [
@@ -20,6 +21,8 @@ export function AgentForm() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+
+  useSetPageHeader(isEdit ? 'Edit Agent' : 'Create Agent');
 
   const [name, setName] = useState('');
   const [status, setStatus] = useState<AgentStatus>('offline');
@@ -72,18 +75,14 @@ export function AgentForm() {
 
   if (isEdit && isLoading) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold mb-6">Edit Agent</h1>
-        <div className="flex items-center justify-center h-64">
-          <Spinner size="lg" />
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Edit Agent' : 'Create Agent'}</h1>
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Name" name="name" value={name} onChange={e => setName(e.target.value)} error={errors.name} required />

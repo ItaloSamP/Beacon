@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.domain.models import DataSource
@@ -62,6 +62,33 @@ class DataSourceRepository:
         await self.db.flush()
         await self.db.refresh(ds)
         return ds
+
+    async def get_health_counts(self) -> dict:
+        """Return counts of datasources by status group."""
+        active_result = await self.db.execute(
+            select(func.count(DataSource.id)).where(DataSource.status == "active")
+        )
+        error_result = await self.db.execute(
+            select(func.count(DataSource.id)).where(DataSource.status == "error")
+        )
+        inactive_result = await self.db.execute(
+            select(func.count(DataSource.id)).where(DataSource.status == "inactive")
+        )
+        total_result = await self.db.execute(select(func.count(DataSource.id)))
+
+        total = total_result.scalar() or 0
+        healthy = active_result.scalar() or 0
+        error = error_result.scalar() or 0
+        offline = inactive_result.scalar() or 0
+        warning = 0  # warning status not yet used in the model
+
+        return {
+            "total": total,
+            "healthy": healthy,
+            "warning": warning,
+            "error": error,
+            "offline": offline,
+        }
 
     async def delete(self, ds: DataSource) -> None:
         await self.db.delete(ds)

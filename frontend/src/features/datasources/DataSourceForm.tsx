@@ -9,6 +9,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { api } from '../../lib/api';
 import type { DataSource, CreateDataSourceRequest, DataSourceType, DataSourceStatus } from '../../types/datasource';
 import type { Agent } from '../../types/agent';
+import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import type { ApiResponse, PaginatedResponse } from '../../types/api';
 
 const TYPE_OPTIONS = [
@@ -29,6 +30,8 @@ export function DataSourceForm() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+
+  useSetPageHeader(isEdit ? 'Edit DataSource' : 'Create DataSource');
 
   const [name, setName] = useState('');
   const [type, setType] = useState<DataSourceType>('postgres');
@@ -111,18 +114,14 @@ export function DataSourceForm() {
 
   if (isEdit && isLoading) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold mb-6">Edit DataSource</h1>
-        <div className="flex items-center justify-center h-64">
-          <Spinner size="lg" />
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Edit DataSource' : 'Create DataSource'}</h1>
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Name" name="name" value={name} onChange={e => setName(e.target.value)} error={errors.name} required />

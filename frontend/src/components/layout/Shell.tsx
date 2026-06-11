@@ -1,12 +1,16 @@
+import { useState, useMemo } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { PageHeaderContext, type PageHeaderData } from './PageHeaderContext';
 
 export function Shell() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const [header, setHeader] = useState<PageHeaderData>({ title: 'Beacon' });
 
-  // Loading state — show spinner while checking auth
+  const ctxValue = useMemo(() => ({ header, setHeader }), [header]);
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -19,21 +23,21 @@ export function Shell() {
     );
   }
 
-  // Not authenticated — redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Authenticated — full shell layout
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar user={user} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-auto p-6">
-          <Outlet />
-        </main>
+    <PageHeaderContext.Provider value={ctxValue}>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar user={user} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title={header.title} actions={header.actions} />
+          <main className="flex-1 overflow-auto p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </PageHeaderContext.Provider>
   );
 }

@@ -1,30 +1,20 @@
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db, async_session_factory
-from app.infrastructure.repositories.pipeline_repo import PipelineRepository
-from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
 from app.application.pipeline_runner import PipelineRunService
-from app.presentation.api.middleware.auth import require_auth
 from app.domain.models import PipelineRun, PipelineRunStatus
 from app.domain.schemas import (
     ApiResponse,
     PaginatedApiResponse,
-    PipelineRunResponse,
     PipelineRunTriggerResponse,
-    PipelineRunListResponse,
 )
+from app.infrastructure.database import async_session_factory, get_db
+from app.infrastructure.repositories.pipeline_run_repo import PipelineRunRepository
+from app.presentation.api.middleware.auth import require_auth
 from app.shared.exceptions import NotFoundException
-from app.domain.schemas import (
-    ApiResponse,
-    PaginatedApiResponse,
-    PipelineRunResponse,
-    PipelineRunTriggerResponse,
-    PipelineRunListResponse,
-)
 
 router = APIRouter(tags=["pipeline-runs"])
 
@@ -65,7 +55,7 @@ async def trigger_pipeline_run(
         pipeline_id=pipeline_id,
         status=PipelineRunStatus.success,
         metrics_json={},
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     run = await run_repo.create(pipeline_run)
 
@@ -85,7 +75,7 @@ async def _run_pipeline_in_background(run_id: str):
         service = PipelineRunService(db)
         try:
             await service.continue_pipeline_run(run_id)
-        except Exception:
+        except NotFoundException:
             pass
 
 
@@ -97,8 +87,9 @@ async def list_pipeline_runs(
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     repo = PipelineRunRepository(db)
-    result = await repo.list_by_pipeline(str(pipeline_id), page=page, per_page=per_page)
+    result = await repo.list_by_pipeline(str(pipeline_id), page=page, per_page=per_page, user_id=user_id)
     data_list = [_serialize_pipeline_run(r) for r in result["data"]]
     return PaginatedApiResponse(
         data=data_list,
@@ -107,26 +98,28 @@ async def list_pipeline_runs(
     )
 
 
-@router.get("/pipeline-runs/{run_id}")
-async def get_pipeline_run(
-    run_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    _user: dict = Depends(require_auth),
-):
-    repo = PipelineRunRepository(db)
-    run = await repo.get_by_id(str(run_id))
-    if not run:
-        raise NotFoundException("Pipeline run not found")
-    return ApiResponse(data=_serialize_pipeline_run(run), error=None)
-
-
 @router.get("/pipeline-runs/recent")
 async def list_recent_runs(
     limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     _user: dict = Depends(require_auth),
 ):
+    user_id = UUID(_user["user_id"])
     repo = PipelineRunRepository(db)
-    runs = await repo.list_recent(limit=limit)
+    runs = await repo.list_recent(limit=limit, user_id=user_id)
     data_list = [_serialize_pipeline_run(r) for r in runs]
     return ApiResponse(data=data_list, error=None)
+
+
+@router.get("/pipeline-runs/{run_id}")
+async def get_pipeline_run(
+    run_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _user: dict = Depends(require_auth),
+):
+    user_id = UUID(_user["user_id"])
+    repo = PipelineRunRepository(db)
+    run = await repo.get_by_id(str(run_id), user_id=user_id)
+    if not run:
+        raise NotFoundException("Pipeline run not found")
+    return ApiResponse(data=_serialize_pipeline_run(run), error=None)

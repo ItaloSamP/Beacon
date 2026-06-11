@@ -7,8 +7,8 @@ import respx
 # RED PHASE — these imports will fail until the modules are created
 from agent.api_client import (  # noqa: E402
     AgentAPIClient,
-    AgentAPIError,
     AgentAPIConnectionError,
+    AgentAPIError,
     AgentAPITimeoutError,
 )
 
