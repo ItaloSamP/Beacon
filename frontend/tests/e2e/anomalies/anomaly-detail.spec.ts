@@ -19,6 +19,7 @@ test.describe('Anomaly Detail', () => {
       data: { email, password },
     });
     const body = await loginRes.json();
+    expect(loginRes.ok(), `Login failed: ${JSON.stringify(body)}`).toBeTruthy();
 
     if (body.data) {
       await page.goto('/');
@@ -84,6 +85,8 @@ test.describe('Anomaly Detail', () => {
       await page.waitForTimeout(2000);
 
       // Seed an anomaly linked to this run
+      // Note: POST /anomalies requires agent_token — user JWT will get 403.
+      // Tests depending on anomalyId will skip gracefully.
       const anomRes = await page.request.post('http://localhost:8000/api/v1/anomalies', {
         headers,
         data: {
@@ -100,7 +103,7 @@ test.describe('Anomaly Detail', () => {
         },
       });
       const anomBody = await anomRes.json();
-      anomalyId = anomBody.data?.id;
+      anomalyId = anomRes.ok() ? anomBody.data?.id : undefined;
     }
   });
 

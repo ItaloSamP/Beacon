@@ -6,14 +6,16 @@ test.describe('Dashboard', () => {
     const email = `e2e-dash-${Date.now()}@beacon.test`;
     const password = 'DashPass123!';
 
-    await page.request.post('http://localhost:8000/api/v1/auth/register', {
+    const regRes = await page.request.post('http://localhost:8000/api/v1/auth/register', {
       data: { email, password, name: 'Dashboard User' },
     });
+    expect(regRes.ok(), `Registration failed: ${await regRes.text()}`).toBeTruthy();
 
     const loginRes = await page.request.post('http://localhost:8000/api/v1/auth/login', {
       data: { email, password },
     });
     const body = await loginRes.json();
+    expect(loginRes.ok(), `Login failed: ${JSON.stringify(body)}`).toBeTruthy();
 
     if (body.data) {
       await page.goto('/');

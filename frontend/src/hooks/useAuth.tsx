@@ -125,14 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch {
-        // Network error or timeout — clear tokens so user doesn't get stuck
-        // This handles: backend down, /auth/me not deployed yet, CORS issues, etc.
-        clearTokens();
-        clearUser();
-        if (!cancelled) {
-          setUser(null);
-          setTokensState(null);
-        }
+        // Network error or timeout — don't clear tokens on transient failures.
+        // The backend may still be starting (E2E CI race condition) or the
+        // request timed out. If the token is truly invalid, the next API call
+        // will return 401 and trigger the apiRequest retry/refresh logic.
       } finally {
         if (!cancelled) {
           setIsVerifying(false);
