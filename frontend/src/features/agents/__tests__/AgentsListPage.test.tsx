@@ -148,7 +148,7 @@ describe('AgentsListPage', () => {
     it('should show empty state when no agents', async () => {
       // Override handler to return empty list
       server.use(
-        http.get('http://localhost:8000/api/v1/agents', () => {
+        http.get('/api/v1/agents', () => {
           return HttpResponse.json(
             { data: [], meta: { page: 1, per_page: 50, total: 0 }, error: null },
             { status: 200 }
@@ -167,7 +167,7 @@ describe('AgentsListPage', () => {
     it('should show error state on API failure', async () => {
       // Override handler to return error
       server.use(
-        http.get('http://localhost:8000/api/v1/agents', () => {
+        http.get('/api/v1/agents', () => {
           return HttpResponse.json(
             { data: null, error: 'server_error', message: 'Internal error fetching agents' },
             { status: 500 }
@@ -245,7 +245,7 @@ describe('AgentsListPage', () => {
       }));
 
       server.use(
-        http.get('http://localhost:8000/api/v1/agents', ({ request }) => {
+        http.get('/api/v1/agents', ({ request }) => {
           const url = new URL(request.url);
           const page = parseInt(url.searchParams.get('page') || '1');
           const perPage = parseInt(url.searchParams.get('per_page') || '50');

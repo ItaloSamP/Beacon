@@ -487,3 +487,420 @@ class TestAlertDispatcher:
         created_alert = call_args[0][0]
         assert created_alert.error_message is not None
         assert "Invalid API key" in (created_alert.error_message or "")
+
+
+class TestAlertDispatcherThresholdFiltering:
+    """Tests for threshold-based alert filtering (new pipeline_id behavior)."""
+
+    @pytest.fixture
+    def mock_db(self):
+        """Mock async DB session."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_alert_repo(self):
+        """Mock Alert repository."""
+        repo = AsyncMock()
+        repo.create = AsyncMock(side_effect=lambda alert: alert)
+        repo.db = AsyncMock()
+        return repo
+
+    @pytest.fixture
+    def mock_notifier(self):
+        """Mock email notifier."""
+        notifier = AsyncMock()
+        notifier.send_alert = AsyncMock(return_value={"status": "sent"})
+        return notifier
+
+    @pytest.fixture
+    def sample_anomaly(self):
+        """Sample Anomaly with z_score deviation."""
+        anomaly = MagicMock(spec=Anomaly)
+        anomaly.id = "anom-001"
+        anomaly.severity = AnomalySeverity.high
+        anomaly.type = "volume"
+        anomaly.description = "Volume anomaly detected"
+        anomaly.deviation_details = {"zscore": -3.5, "deviation_pct": -60, "null_pct": 0}
+        anomaly.pipeline_run_id = "run-001"
+        anomaly.detected_at = utcnow()
+        return anomaly
+
+    def _make_rule(self, metric, operator, threshold, enabled=True, channels=None):
+        """Create a mock AlertRule with structured fields."""
+        rule = MagicMock(spec=AlertRule)
+        rule.id = "rule-test"
+        rule.metric = metric
+        rule.operator = operator
+        rule.threshold = threshold
+        rule.channels = channels or [AlertChannel.email]
+        rule.enabled = enabled
+        return rule
+
+    def _make_dispatcher(self, mock_db, mock_alert_repo, mock_notifier, active_rules=None):
+        """Create dispatcher with mocked rule repository returning active_rules."""
+        dispatcher = AlertDispatcher(
+            db=mock_db,
+            alert_repo=mock_alert_repo,
+            notifier=mock_notifier,
+        )
+        # Mock _load_active_rules to return specified rules
+        dispatcher._load_active_rules = AsyncMock(return_value=active_rules or [])
+        return dispatcher
+
+    # ============================================================
+    # No pipeline_id → backward compat (always alerts)
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_no_pipeline_id_always_alerts(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """When pipeline_id is None, dispatch should always create alert (backward compat)."""
+        dispatcher = self._make_dispatcher(mock_db, mock_alert_repo, mock_notifier)
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id=None)
+
+        mock_alert_repo.create.assert_called()
+        assert len(result) == 1
+
+    # ============================================================
+    # No active rules → no alert
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_no_rules_no_alert(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """If no active rules exist for pipeline, NO alert should be dispatched."""
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    # ============================================================
+    # Matching rule → alert created
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_matching_rule_creates_alert(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """When anomaly severity meets threshold, alert should be created."""
+        # z_score > 2.0 threshold; anomaly has zscore=3.5 (abs=3.5, > 2.0)
+        rule = self._make_rule("z_score", "gt", 2.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_called()
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_matching_gte_rule_creates_alert(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """When anomaly value equals threshold (gte), alert should be created."""
+        # z_score >= 3.5 threshold; anomaly zscore abs=3.5, >= 3.5
+        rule = self._make_rule("z_score", "gte", 3.5)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_called()
+        assert len(result) == 1
+
+    # ============================================================
+    # Non-matching rule → no alert
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_non_matching_rule_no_alert(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """When anomaly severity does NOT meet threshold, no alert."""
+        # z_score > 5.0; anomaly has zscore=3.5, NOT > 5.0
+        rule = self._make_rule("z_score", "gt", 5.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_lt_operator_not_matched(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """lt operator: anomaly zscore=3.5 is NOT < 2.0."""
+        rule = self._make_rule("z_score", "lt", 2.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    # ============================================================
+    # Multiple rules → single alert (dedup)
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_multiple_rules_single_alert(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """When multiple rules match, only one alert should be created."""
+        rules = [
+            self._make_rule("z_score", "gt", 2.0),
+            self._make_rule("volume_delta_pct", "gt", 50.0),  # deviation_pct=60, > 50
+            self._make_rule("null_pct", "lt", 5.0),  # null_pct=0, < 5
+        ]
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=rules
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        # All three rules match, but only one alert should be created
+        mock_alert_repo.create.assert_called_once()
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_mixed_rules_one_match_creates_alert(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """When one of multiple rules matches, alert should be created."""
+        rules = [
+            self._make_rule("z_score", "gt", 5.0),  # NOT match (3.5 < 5)
+            self._make_rule("volume_delta_pct", "gt", 50.0),  # MATCH (60 > 50)
+            self._make_rule("z_score", "gt", 10.0),  # NOT match
+        ]
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=rules
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_called_once()
+        assert len(result) == 1
+
+    # ============================================================
+    # Disabled rules are skipped
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_disabled_rule_not_evaluated(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """A disabled rule should not trigger an alert because repo filters disabled rules out."""
+        # list_active_by_pipeline only returns enabled=True rules,
+        # so disabled rules are never loaded — simulate with empty active_rules
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    # ============================================================
+    # Different metrics: volume_delta_pct
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_volume_delta_pct_matching(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """volume_delta_pct > 50 matches when deviation_pct=60."""
+        rule = self._make_rule("volume_delta_pct", "gt", 50.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_called()
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_volume_delta_pct_not_matching(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """volume_delta_pct > 80 does NOT match deviation_pct=60."""
+        rule = self._make_rule("volume_delta_pct", "gt", 80.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    # ============================================================
+    # Different metrics: null_pct
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_null_pct_lt_matching(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """null_pct < 5 matches when null_pct=0 in deviation_details."""
+        rule = self._make_rule("null_pct", "lt", 5.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_called()
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_null_pct_gte_not_matching(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """null_pct >= 5 does NOT match when null_pct=0."""
+        rule = self._make_rule("null_pct", "gte", 5.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    # ============================================================
+    # Edge cases
+    # ============================================================
+
+    @pytest.mark.asyncio
+    async def test_anomaly_with_empty_deviation_details(
+        self, mock_db, mock_alert_repo, mock_notifier
+    ):
+        """Anomaly with empty deviation_details should not match any rule."""
+        anomaly = MagicMock(spec=Anomaly)
+        anomaly.id = "anom-empty"
+        anomaly.severity = AnomalySeverity.low
+        anomaly.type = "volume"
+        anomaly.description = "No details"
+        anomaly.deviation_details = {}
+        anomaly.pipeline_run_id = "run-001"
+        anomaly.detected_at = utcnow()
+
+        rule = self._make_rule("z_score", "gt", 2.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(anomaly, pipeline_id="pipe-001")
+
+        # z_score defaults to 0 when deviation_details is empty, 0 > 2 is False
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_anomaly_with_none_deviation_details(
+        self, mock_db, mock_alert_repo, mock_notifier
+    ):
+        """Anomaly with None deviation_details should not match."""
+        anomaly = MagicMock(spec=Anomaly)
+        anomaly.id = "anom-none"
+        anomaly.severity = AnomalySeverity.low
+        anomaly.type = "volume"
+        anomaly.description = "None details"
+        anomaly.deviation_details = None
+        anomaly.pipeline_run_id = "run-001"
+        anomaly.detected_at = utcnow()
+
+        rule = self._make_rule("z_score", "gt", 2.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_unknown_operator_skipped(
+        self, mock_db, mock_alert_repo, mock_notifier, sample_anomaly
+    ):
+        """A rule with an unknown operator should not cause errors, just be skipped."""
+        rule = self._make_rule("z_score", "unknown_op", 2.0)
+        dispatcher = self._make_dispatcher(
+            mock_db, mock_alert_repo, mock_notifier, active_rules=[rule]
+        )
+
+        result = await dispatcher.dispatch(sample_anomaly, pipeline_id="pipe-001")
+
+        mock_alert_repo.create.assert_not_called()
+        assert result == []
+
+    # ============================================================
+    # Helper function tests: _evaluate_rule
+    # ============================================================
+
+    def test_evaluate_rule_gt(self):
+        """_evaluate_rule: gt operator comparison."""
+        from app.application.alert_dispatcher import _evaluate_rule
+        from app.domain.models import AlertRule
+
+        rule = AlertRule(metric="z_score", operator="gt", threshold=2.0)
+        anomaly = MagicMock(deviation_details={"zscore": 3.5})
+        assert _evaluate_rule(rule, anomaly) is True
+
+        anomaly2 = MagicMock(deviation_details={"zscore": 1.0})
+        assert _evaluate_rule(rule, anomaly2) is False
+
+    def test_evaluate_rule_lt(self):
+        """_evaluate_rule: lt operator comparison."""
+        from app.application.alert_dispatcher import _evaluate_rule
+
+        rule = AlertRule(metric="null_pct", operator="lt", threshold=5.0)
+        anomaly = MagicMock(deviation_details={"null_pct": 3.0})
+        assert _evaluate_rule(rule, anomaly) is True
+
+        anomaly2 = MagicMock(deviation_details={"null_pct": 7.0})
+        assert _evaluate_rule(rule, anomaly2) is False
+
+    def test_evaluate_rule_eq(self):
+        """_evaluate_rule: eq operator comparison."""
+        from app.application.alert_dispatcher import _evaluate_rule
+
+        rule = AlertRule(metric="z_score", operator="eq", threshold=3.5)
+        anomaly = MagicMock(deviation_details={"zscore": 3.5})
+        assert _evaluate_rule(rule, anomaly) is True
+
+        anomaly2 = MagicMock(deviation_details={"zscore": 3.6})
+        assert _evaluate_rule(rule, anomaly2) is False
+
+    def test_resolve_metric_value_volume_delta_pct(self):
+        """_resolve_metric_value: volume_delta_pct extracts deviation_pct."""
+        from app.application.alert_dispatcher import _resolve_metric_value
+
+        anomaly = MagicMock(deviation_details={"deviation_pct": -60})
+        val = _resolve_metric_value(anomaly, "volume_delta_pct")
+        assert val == 60.0  # abs()
+
+    def test_resolve_metric_value_unknown_metric(self):
+        """_resolve_metric_value: unknown metric returns 0.0."""
+        from app.application.alert_dispatcher import _resolve_metric_value
+
+        anomaly = MagicMock(deviation_details={})
+        val = _resolve_metric_value(anomaly, "unknown_metric")
+        assert val == 0.0

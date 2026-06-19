@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import type { User, Tokens } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import { api, setTokens, clearTokens } from '../lib/api';
@@ -27,6 +27,7 @@ interface AuthContextType {
   tokens: Tokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isVerifying: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -47,6 +48,117 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(() => {
+    return !!(localStorage.getItem('access_token') && localStorage.getItem('refresh_token') && localStorage.getItem('beacon_user'));
+  });
+
+  // Validate stored tokens against the server on mount
+  useEffect(() => {
+    const storedAccess = localStorage.getItem('access_token');
+    const storedRefresh = localStorage.getItem('refresh_token');
+    const storedUser = localStorage.getItem('beacon_user');
+
+    if (!storedAccess || !storedRefresh || !storedUser) {
+      setIsVerifying(false);
+      // Ensure state is clean if localStorage is inconsistent
+      if (user) setUser(null);
+      if (tokens) setTokensState(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function verify() {
+      try {
+        // Add a timeout so verification doesn't hang indefinitely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        const response = await fetch('/api/v1/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${storedAccess}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (cancelled) return;
+
+        if (!response.ok) {
+          // Try refresh first
+          const refreshResp = await fetch('/api/v1/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: storedRefresh }),
+          });
+
+          if (cancelled) return;
+
+          if (refreshResp.ok) {
+            const refreshBody = await refreshResp.json();
+            if (refreshBody.data) {
+              setTokens(refreshBody.data.access_token, refreshBody.data.refresh_token);
+              setTokensState({
+                accessToken: refreshBody.data.access_token,
+                refreshToken: refreshBody.data.refresh_token,
+              });
+              setIsVerifying(false);
+              return;
+            }
+          }
+
+          // Both failed — clear everything
+          clearTokens();
+          clearUser();
+          if (!cancelled) {
+            setUser(null);
+            setTokensState(null);
+          }
+        } else {
+          // Token is valid — update user from response
+          const body = await response.json();
+          if (!cancelled && body.data?.user) {
+            setUser(body.data.user);
+            saveUser(body.data.user);
+          }
+        }
+      } catch {
+        // Network error or timeout — clear tokens so user doesn't get stuck
+        // This handles: backend down, /auth/me not deployed yet, CORS issues, etc.
+        clearTokens();
+        clearUser();
+        if (!cancelled) {
+          setUser(null);
+          setTokensState(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsVerifying(false);
+        }
+      }
+    }
+
+    verify();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on mount
+
+  // Listen for force-logout events from api.ts
+  useEffect(() => {
+    function handleForceLogout() {
+      setUser(null);
+      setTokensState(null);
+      setIsVerifying(false);
+    }
+
+    window.addEventListener('beacon:force-logout', handleForceLogout);
+    return () => window.removeEventListener('beacon:force-logout', handleForceLogout);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
@@ -108,12 +220,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     tokens,
     isAuthenticated: !!tokens && !!user,
     isLoading,
+    isVerifying,
     login,
     logout,
     register: registerFn,
     forgotPassword: forgotPasswordFn,
     resetPassword: resetPasswordFn,
-  }), [user, tokens, isLoading, login, logout, registerFn, forgotPasswordFn, resetPasswordFn]);
+  }), [user, tokens, isLoading, isVerifying, login, logout, registerFn, forgotPasswordFn, resetPasswordFn]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -44,6 +44,16 @@ jobs:
       - name: Pytest with coverage
         run: python -m pytest agent/tests/ --cov=agent --cov-report=xml --cov-report=term --cov-fail-under=80
 
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          flags: agent
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Upload coverage artifact
         if: always()
         uses: actions/upload-artifact@v4

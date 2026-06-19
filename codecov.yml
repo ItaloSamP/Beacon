@@ -1,0 +1,49 @@
+# Codecov configuration for Beacon
+# Docs: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...100"
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+        base: auto
+    patch:
+      default:
+        target: 80%
+        threshold: 2%
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+  require_head: yes
+  show_carryforward_flags: true
+
+github_checks:
+  annotations: true
+
+flags:
+  backend:
+    paths:
+      - app/
+    carryforward: true
+  frontend:
+    paths:
+      - frontend/src/
+    carryforward: true
+  agent:
+    paths:
+      - agent/
+    carryforward: true
+
+ignore:
+  - "tests/"
+  - "frontend/tests/"
+  - "agent/tests/"
+  - "**/__pycache__/"
+  - "**/node_modules/"
+  - "**/*.d.ts"

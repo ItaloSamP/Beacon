@@ -36,7 +36,7 @@ def wait_for_backend(client: httpx.Client) -> None:
                 return
         except httpx.RequestError:
             pass
-        print(f"  Backend not ready — waiting... ({attempt}/{MAX_RETRIES})")
+        print(f"  Backend not ready â€” waiting... ({attempt}/{MAX_RETRIES})")
         time.sleep(RETRY_DELAY)
     raise RuntimeError(f"Backend did not become healthy after {MAX_RETRIES} retries")
 

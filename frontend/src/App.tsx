@@ -31,9 +31,9 @@ const queryClient = new QueryClient({
 });
 
 function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isVerifying } = useAuth();
 
-  if (isLoading) {
+  if (isVerifying || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-bg">
         <Spinner size="lg" />

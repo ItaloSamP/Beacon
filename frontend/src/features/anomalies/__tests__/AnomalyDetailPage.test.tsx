@@ -191,7 +191,7 @@ describe('AnomalyDetailPage', () => {
     it('should show error state on API failure', async () => {
       server.use(
         http.get(
-          'http://localhost:8000/api/v1/anomalies/anomaly-uuid-001',
+          '/api/v1/anomalies/anomaly-uuid-001',
           () => {
             return HttpResponse.json(
               {
@@ -216,7 +216,7 @@ describe('AnomalyDetailPage', () => {
     it('should show not found message for non-existent anomaly', async () => {
       server.use(
         http.get(
-          'http://localhost:8000/api/v1/anomalies/non-existent-id',
+          '/api/v1/anomalies/non-existent-id',
           () => {
             return HttpResponse.json(
               {

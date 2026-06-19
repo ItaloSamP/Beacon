@@ -11,7 +11,7 @@ import { StatusDot } from '../components/ui/StatusDot';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorPanel } from '../components/ui/ErrorPanel';
-import { api } from '../lib/api';
+import { api, SessionExpiredError } from '../lib/api';
 import { useSetPageHeader } from '../components/layout/PageHeaderContext';
 import type { PaginatedResponse } from '../types/api';
 import type { DataSource } from '../types/datasource';
@@ -174,6 +174,20 @@ export function DashboardPage() {
     </Link>
   );
   useSetPageHeader('Dashboard', headerActions);
+
+  // If session expired, the Shell will redirect — show nothing
+  if (
+    healthErrorObj instanceof SessionExpiredError ||
+    dsErrorObj instanceof SessionExpiredError ||
+    anomaliesErrorObj instanceof SessionExpiredError ||
+    runsErrorObj instanceof SessionExpiredError
+  ) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div data-testid="dashboard">

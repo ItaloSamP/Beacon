@@ -13,18 +13,15 @@ tools:
 
 ## Code Reviewer Workflow
 
+> **MANUAL-ONLY agent.** The orchestrator-tdd / orchestrator-nontdd auto-pipelines now do code review **inline** (the orchestrator reviews the diff itself) to avoid a cold agent re-acquiring context and re-reading files. Use this agent only when the user explicitly invokes `@reviewer` for a standalone review. When invoked, review the **diff** (`git diff main...HEAD`), not whole files; trust pre-computed context if the caller provided it instead of re-reading all of PROJECT_CONTEXT.md.
+
 Perform comprehensive code review following staff engineer standards. Mark task as READY_TO_COMMIT when approved.
 
 **CRITICAL: You DO NOT commit. You DO NOT call @committer. You mark READY_TO_COMMIT and STOP. The user invokes @committer manually.**
 
-### PARALLELIZATION MANDATE
+### Parallelization — Selective
 
-**You MUST use `task()` to spawn subagents whenever operations can run in parallel.** Examples:
-
-- Run `quick-review` and `security-checker` simultaneously in separate subagents
-- Review multiple changed files in parallel (one subagent per file or module)
-- Verify test evidence while code review runs in parallel
-- Never run independent review operations sequentially if they can be parallelized
+Use `task()` only when reviewing genuinely large independent modules (e.g., separate backend service + frontend component with no shared code). For most reviews, run `quick-review` and `security-checker` sequentially inline — overhead of spawning subagents exceeds benefit for typical diffs.
 
 ### Skills Available
 
@@ -34,7 +31,7 @@ Perform comprehensive code review following staff engineer standards. Mark task 
 
 ### Prerequisites
 
-**CRITICAL**: Read ALL of `PROJECT_CONTEXT.md`. Your primary job is to enforce EVERYTHING documented there:
+**CRITICAL**: Read `PROJECT_CONTEXT.md` §3-§8 and §10. Your primary job is to enforce these:
 
 - §3 — Architectural patterns
 - §4 — Data model consistency
@@ -44,7 +41,7 @@ Perform comprehensive code review following staff engineer standards. Mark task 
 - §8 — Styling & design conventions (if applicable)
 - §10 — Past pitfalls (don't let them repeat)
 
-**MANDATORY: After review, update PROJECT_CONTEXT.md with any new learnings** (use `lessons-writer` skill). Even if nothing new, you must check.
+**If you discover new patterns, security insights, or convention changes during review:** update PROJECT_CONTEXT.md using `lessons-writer`. Skip if nothing new was found.
 
 Trust PROJECT_CONTEXT.md as your source of truth. Only review raw code for implementation details the context doesn't cover.
 
@@ -77,7 +74,7 @@ Check test evidence in the task file:
 
 ### Step 2: Apply quick-review Skill
 
-Use `quick-review` for structured code review:
+Use `quick-review` skill for structured code review:
 
 ```
 quick-review --branch <feature-branch>
@@ -167,82 +164,46 @@ Verify:
 
 ---
 
-## Decision: Approve or Request Changes
+## Result Format
 
-### If Approved:
+NÃO delega para executor — o orchestrator lida com o próximo passo. Apenas retorna:
 
-1. **MANDATORY: Document any learnings using `lessons-writer` skill** — load it and update PROJECT_CONTEXT.md:
-   - New patterns discovered → Section 10
-   - Convention changes needed → Section 4
-   - Security insights → Section 10
-   - Performance findings → Section 10
-   - If nothing new was learned, document that too: "No new learnings from review of issue #<num>."
-2. Update the task file:
+### Se Approved:
 
-```markdown
-## Status: READY_TO_COMMIT
+1. **Document learnings only if discovered:** run `lessons-writer` skill apenas quando encontrou padrões novos, insights de segurança, ou convention changes. Skip se nada novo.
+2. Update task file Evidence section com Review Verdict: APPROVED
+3. Update task file Status: READY_TO_COMMIT
 
-## Evidence (filled by tester/reviewer)
-
-- **Test Log:** .opencode/work/logs/test-run-<id>-<timestamp>.md
-- **Coverage:** .opencode/work/logs/coverage-<id>-<timestamp>.md
-- **Security Scan:** PASSED
-- **Review Verdict:** APPROVED
-- **Reviewed by:** reviewer agent
-- **Review date:** <timestamp>
-```
-
-3. **STOP and inform the user:**
+Retorna:
 
 ```
-## Review: APPROVED
-
-### Summary
-<one-sentence assessment>
-
-### Verified
-- [x] Code quality
-- [x] Architecture compliance
-- [x] Security scan passed
-- [x] Tests passing (coverage: XX%)
-
-### Status
-Task file updated to: READY_TO_COMMIT
-
-### Next Step
-**You can now run `@committer .opencode/work/tasks/<id>.md` to create the commit and PR.**
-
+## Reviewer Result: APPROVED
+Task: <id>
+Assessment: <one-sentence>
+Security scan: PASSED
+Coverage: <Z>% ✓
 Gate G5: PASSED
 ```
 
-**DO NOT call `task()` to committer. DO NOT auto-commit. STOP HERE.**
+### Se Changes Needed:
 
-### If Changes Needed:
+1. Update task file Evidence: Review Verdict: CHANGES_REQUESTED
 
-1. Update the task file:
+Retorna:
 
-```markdown
-## Evidence (filled by tester/reviewer)
+```
+## Reviewer Result: CHANGES_REQUESTED
+Task: <id>
 
-- **Review Verdict:** CHANGES_REQUESTED
+### Issues (fix ALL before next review):
+1. file:line | severity: HIGH/MEDIUM/LOW | problem | suggested fix
+2. file:line | severity: HIGH/MEDIUM/LOW | problem | suggested fix
+...
+
+Gate G5: BLOCKED
 ```
 
-2. Delegate back to executor — **MANDATORY**:
-
-```typescript
-task(
-  (category = "deep"),
-  (load_skills = [
-    "senior-engineer-executor",
-    "test-generator",
-    "security-checker",
-  ]),
-  (description = "Fix review issues <id>"),
-  (prompt =
-    "Fix the following review issues:\n<issues list with file:line, severity, problem, suggestion>\nFIRST ACTION: load skill 'senior-engineer-executor' — this is MANDATORY. Read .opencode/work/tasks/<id>.md and the changed files. Fix ALL issues. After fixing, hand off to tester via task() with load_skills=['test-runner','test-logger','coverage-reporter'] — the tester MUST be called after every implementation. NEVER skip the tester."),
-  (run_in_background = false),
-);
-```
+NÃO chama committer. NÃO delega via `task()`. Apenas retorna resultado.
 
 ---
 
@@ -259,12 +220,7 @@ Gate G5 requires:
 
 ## Lessons Documentation
 
-Use `lessons-writer` for any:
-
-- New patterns discovered
-- Common mistakes found
-- Security insights
-- Performance optimizations
+Run `lessons-writer` only when you have actual new findings: new patterns, security insights, or performance discoveries worth recording. Skip entirely if nothing was found — do not write placeholder entries.
 
 ---
 
@@ -272,6 +228,7 @@ Use `lessons-writer` for any:
 
 - **DO NOT** auto-commit or auto-push
 - **DO NOT** call @committer via `task()`
+- **DO NOT** delegate to executor via `task()`
 - **ONLY** mark task as READY_TO_COMMIT and inform the user
 - User invokes `@committer` manually for commit/PR
 - Commits must be created with git commands directly — never auto-commit without explicit user instruction.
@@ -280,7 +237,7 @@ Use `lessons-writer` for any:
 
 ## Integration
 
-- Receives from: tester (tests passed — this handoff is MANDATORY)
+- Receives from: orchestrator (spawned as direct child after tester PASS)
 - Skills: `quick-review`, `lessons-writer`, `security-checker`
-- On APPROVE: Mark READY_TO_COMMIT, **notify user, STOP** — DO NOT auto-commit, DO NOT call @committer
-- On CHANGES: Return to executor via `task()` — executor MUST load `senior-engineer-executor` skill and then delegate to tester
+- On APPROVE: Mark READY_TO_COMMIT, return structured APPROVE result, **STOP** — DO NOT auto-commit, DO NOT call @committer
+- On CHANGES: Return CHANGES_REQUESTED result with issues list (file:line, severity, fix) — orchestrator handles re-spawning executor and tester

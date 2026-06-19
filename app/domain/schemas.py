@@ -313,11 +313,86 @@ class AlertCreate(BaseModel):
     channel: str = "email"
 
 
+# Valid metrics and operators for alert rules
+_ALERT_METRICS = {"z_score", "null_pct", "volume_delta_pct"}
+_ALERT_OPERATORS = {"gt", "lt", "gte", "lte", "eq"}
+
+
+class AlertRuleCreate(BaseModel):
+    metric: str
+    operator: str
+    threshold: float
+    channels: list[str] | None = None
+    enabled: bool = True
+
+    @field_validator("metric")
+    @classmethod
+    def metric_must_be_valid(cls, v: str) -> str:
+        if v not in _ALERT_METRICS:
+            raise ValueError(
+                f"metric must be one of: {', '.join(sorted(_ALERT_METRICS))}"
+            )
+        return v
+
+    @field_validator("operator")
+    @classmethod
+    def operator_must_be_valid(cls, v: str) -> str:
+        if v not in _ALERT_OPERATORS:
+            raise ValueError(
+                f"operator must be one of: {', '.join(sorted(_ALERT_OPERATORS))}"
+            )
+        return v
+
+    @field_validator("threshold")
+    @classmethod
+    def threshold_must_be_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("threshold must be a positive number")
+        return v
+
+
+class AlertRuleUpdate(BaseModel):
+    metric: str | None = None
+    operator: str | None = None
+    threshold: float | None = None
+    channels: list[str] | None = None
+    enabled: bool | None = None
+
+    @field_validator("metric")
+    @classmethod
+    def metric_must_be_valid(cls, v: str | None) -> str | None:
+        if v is not None and v not in _ALERT_METRICS:
+            raise ValueError(
+                f"metric must be one of: {', '.join(sorted(_ALERT_METRICS))}"
+            )
+        return v
+
+    @field_validator("operator")
+    @classmethod
+    def operator_must_be_valid(cls, v: str | None) -> str | None:
+        if v is not None and v not in _ALERT_OPERATORS:
+            raise ValueError(
+                f"operator must be one of: {', '.join(sorted(_ALERT_OPERATORS))}"
+            )
+        return v
+
+    @field_validator("threshold")
+    @classmethod
+    def threshold_must_be_positive(cls, v: float | None) -> float | None:
+        if v is not None and v <= 0:
+            raise ValueError("threshold must be a positive number")
+        return v
+
+
 class AlertRuleResponse(BaseModel):
     id: str
     pipeline_id: str
-    condition: str
-    channels: list | None = None
-    enabled: bool = True
+    metric: str
+    operator: str
+    threshold: float
+    channels: list
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
 
     model_config = {"from_attributes": True}

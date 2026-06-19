@@ -11,18 +11,22 @@ Setup in 5 minutes, zero validation queries required.
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│  User (beacon.app)                   │
-│  ├── Agent 1 (client infra A)        │
-│  │   ├── DataSource A1 (PostgreSQL)  │
-│  │   └── DataSource A2 (MySQL)       │
-│  └── Agent 2 (client infra B)        │
-│      └── DataSource B1 (BigQuery)    │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  Cloud Dashboard (beacon.app)             │
+│  ┌──────────────────────────────────┐    │
+│  │ Agent 1 (client infra A)          │    │
+│  │  ├── PostgreSQL DB                │    │
+│  │  └── PostgreSQL DB                │    │
+│  └──────────────────────────────────┘    │
+│  ┌──────────────────────────────────┐    │
+│  │ Agent 2 (client infra B)          │    │
+│  │  └── PostgreSQL DB                │    │
+│  └──────────────────────────────────┘    │
+└──────────────────────────────────────────┘
 ```
 
-- **Local Agent** (Python) — runs on client infrastructure, connects to databases, does statistical profiling, learns baselines, detects anomalies via z-score. **Never sends raw data** — only statistical summaries and schema metadata.
-- **Cloud Dashboard** (FastAPI + React) — centralized management, anomaly history, alert dispatch (email), remote agent configuration.
+- **Local Agent** (Python) — runs on client infrastructure, connects to PostgreSQL databases via asyncpg, does statistical profiling (schema, row count, null %), learns baselines in local SQLite, detects anomalies via z-score. **Never sends raw data** — only statistical summaries and schema metadata.
+- **Cloud Dashboard** (FastAPI + React) — centralized management, anomaly history, alert dispatch (email via SendGrid), remote agent configuration, dashboard with real-time status cards and anomaly feed.
 
 ---
 
@@ -30,13 +34,21 @@ Setup in 5 minutes, zero validation queries required.
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19 + TypeScript + Vite + TailwindCSS v4 |
-| State | TanStack Query (React Query) |
+| Frontend | React 19 + TypeScript + Vite 6 + TailwindCSS v4 |
+| State | TanStack Query v5 (React Query) |
+| Routing | React Router DOM v7 |
+| Icons | Lucide React + Radix UI primitives |
 | Backend | Python 3.13 + FastAPI |
 | Database | PostgreSQL 16 + SQLAlchemy 2.0 (async) |
+| Migrations | Alembic |
 | Cache | Redis 7 |
-| Auth | JWT (dashboard) + API Keys (connectors) |
-| Lint | Ruff (Python) + ESLint (TypeScript) |
+| Auth | JWT (dashboard) + API Keys (connectors) + Agent Tokens (local agents) |
+| Encryption | Fernet symmetric (connection config at rest) |
+| Email | SendGrid (HTML alert templates) |
+| Testing | pytest + Vitest + Playwright (E2E) |
+| Lint/Type | Ruff + mypy (Python) / ESLint + tsc (TypeScript) |
+| CI/CD | GitHub Actions (backend, frontend, agent) |
+| Infra | Docker Compose (5 services) |
 
 ---
 
@@ -124,6 +136,9 @@ docker compose exec backend python -m pytest tests/ -v
 
 # Frontend tests
 docker compose exec frontend npx vitest run
+
+# Frontend E2E tests (requires all services running)
+docker compose exec frontend npx playwright test
 ```
 
 ---
@@ -178,6 +193,21 @@ The dashboard is available at `http://localhost:5173`.
 
 Test user: `admin@beacon.dev` / `admin123`
 
+### 5. Agent setup (optional)
+
+```bash
+cd agent
+pip install -e .
+```
+
+Create an agent via the dashboard or API to get a token, then:
+
+```bash
+beacon-agent run --token beacon_agent_xxx --once
+```
+
+The `--once` flag runs profiling once and exits. Omit it for continuous mode with heartbeat.
+
 ---
 
 ## Project Structure
@@ -185,27 +215,41 @@ Test user: `admin@beacon.dev` / `admin123`
 ```
 beacon/
 ├── app/                          # Backend (Modular Monolith)
-│   ├── domain/                   # Models, enums, schemas
-│   ├── application/              # Services, use cases
-│   ├── infrastructure/           # Database, repos, connectors, notifiers
-│   ├── presentation/             # API routes, middleware
-│   └── shared/                   # Config, exceptions
-├── agent/                        # Local agent (Python package)
-├── alembic/                      # Database migrations
+│   ├── domain/                   # SQLAlchemy models, Pydantic schemas, enums
+│   ├── application/              # Services, use cases (agent, datasource, pipeline, anomaly, alert)
+│   ├── infrastructure/           # Database, repos, Fernet crypto, SendGrid notifier
+│   ├── presentation/             # FastAPI routes, auth middleware (JWT+APIKey+AgentToken)
+│   └── shared/                   # Pydantic-settings config, exceptions
+├── agent/                        # Local agent (independent Python package)
+│   ├── cli.py                    # Click CLI: beacon-agent run --token --cloud-url --once
+│   ├── connectors/postgres.py    # PostgresConnector (asyncpg — no ORM)
+│   ├── profiling/                # Schema, volume, null-check profilers + runner
+│   ├── storage.py                # SQLite baseline storage + offline alert queue
+│   ├── detection.py              # Z-score anomaly detector + severity classification
+│   ├── heartbeat.py              # Async heartbeat loop (network-resilient)
+│   ├── api_client.py             # HTTP client for cloud API
+│   └── config.py                 # Pydantic-settings (BEACON_CLOUD_URL, BEACON_AGENT_TOKEN, etc.)
+├── alembic/                      # Database migrations (4 versions: initial, agents, tokens, indexes)
 ├── frontend/                     # React + TypeScript dashboard
+│   ├── playwright.config.ts      # E2E test config (Chromium, CI-ready)
+│   ├── vite.config.ts            # Vite build + vitest config + API proxy
 │   └── src/
 │       ├── features/             # Feature-based organization
-│       │   ├── agents/
-│       │   ├── datasources/
-│       │   ├── pipelines/
-│       │   ├── anomalies/
-│       │   └── alerts/
-│       ├── components/           # Shared UI components
-│       ├── hooks/                # Shared hooks
-│       ├── lib/                  # API client
-│       └── types/                # TypeScript types
-├── tests/                        # Backend integration tests
-├── docker-compose.yml            # Development services
+│       │   ├── agents/           # AgentsListPage, AgentForm
+│       │   ├── anomalies/        # AnomaliesListPage, AnomalyDetailPage
+│       │   ├── auth/             # LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage
+│       │   ├── datasources/      # DataSourcesListPage, DataSourceDetailPage, DataSourceForm
+│       │   └── pipelines/        # PipelinesListPage, PipelineForm, PipelineRunsPage
+│       ├── pages/                # DashboardPage, LandingPage
+│       ├── components/ui/        # 23 shared UI components (Button, Table, Modal, Tabs, etc.)
+│       ├── components/layout/    # Shell, Sidebar, Header
+│       ├── hooks/                # useAuth (context + provider)
+│       ├── lib/                  # api.ts (typed endpoint functions, ApiEnvelope pattern)
+│       └── types/                # TypeScript types (agent, datasource, pipeline, anomaly, alert, etc.)
+├── tests/                        # Backend test suite (unit + integration)
+├── scripts/                      # entrypoint.sh, seed.py, generate_agent_token.py
+├── docker/                       # Dockerfiles (backend, frontend, agent)
+├── docker-compose.yml            # Dev environment (postgres + redis + backend + frontend + agent)
 └── README.md
 ```
 
@@ -230,8 +274,10 @@ beacon/
 | Command | Description |
 |---------|------------|
 | `npm run dev` | Start dev server |
-| `npx vitest run` | Run tests |
+| `npx vitest run` | Run unit tests |
 | `npx vitest --coverage` | Tests with coverage |
+| `npm run test:e2e` | Run Playwright E2E tests |
+| `npm run test:e2e:ui` | Run E2E tests with Playwright UI |
 | `npm run lint` | Lint TypeScript |
 | `npx tsc --noEmit` | Type-check |
 | `npm run build` | Production build |
@@ -242,7 +288,7 @@ beacon/
 
 - **Backend:** Pytest with async HTTP client (httpx). Requires PostgreSQL.
 - **Frontend:** Vitest + React Testing Library + MSW for API mocking.
-- **E2E:** Playwright (planned for Sprint 1+).
+- **E2E:** Playwright (17 tests, 6 specs — auth, dashboard, pipeline CRUD, pipeline run, anomaly detail, alert rules).
 
 ---
 

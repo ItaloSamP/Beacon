@@ -1,7 +1,5 @@
 # Test Log Index
 
-| Sprint | Test Run | Coverage | Security |
-|--------|----------|----------|----------|
-| Sprint 0 | [test-run.md](./sprint-0/test-run.md) | [coverage.md](./sprint-0/coverage.md) | [security.md](./sprint-0/security.md) |
-| Sprint 1 | [test-run.md](./sprint-1/test-run.md) | [coverage.md](./sprint-1/coverage.md) | [security.md](./sprint-1/security.md) |
-| Issue #4 | [test-run-issue-4.md](./test-run-issue-4.md) (Run 11: 750/750 PASS) | [coverage-issue-4.md](./coverage-issue-4.md) (89.16%) | [security-issue-4.md](./security-issue-4.md) |
+| Date | Issue | Tests | Result | Log | Coverage |
+|------|-------|-------|--------|-----|----------|
+| 2026-06-19 | #24 | 18/18 | PASS | [test-run-24-20260619-011732.md](./test-run-24-20260619-011732.md) | [coverage-24-20260619-011732.md](./coverage-24-20260619-011732.md) |

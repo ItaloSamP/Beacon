@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.domain.models import DataSource
+from app.domain.models import DataSource, DataSourceStatus
 
 
 class DataSourceRepository:
@@ -32,8 +32,13 @@ class DataSourceRepository:
             query = query.where(DataSource.type == type)
             count_query = count_query.where(DataSource.type == type)
         if status:
-            query = query.where(DataSource.status == status)
-            count_query = count_query.where(DataSource.status == status)
+            try:
+                status_enum = DataSourceStatus(status)
+            except ValueError:
+                status_enum = None
+            if status_enum is not None:
+                query = query.where(DataSource.status == status_enum)
+                count_query = count_query.where(DataSource.status == status_enum)
         if agent_id is not None:
             query = query.where(DataSource.agent_id == agent_id)
             count_query = count_query.where(DataSource.agent_id == agent_id)
@@ -66,13 +71,13 @@ class DataSourceRepository:
     async def get_health_counts(self) -> dict:
         """Return counts of datasources by status group."""
         active_result = await self.db.execute(
-            select(func.count(DataSource.id)).where(DataSource.status == "active")
+            select(func.count(DataSource.id)).where(DataSource.status == DataSourceStatus.active)
         )
         error_result = await self.db.execute(
-            select(func.count(DataSource.id)).where(DataSource.status == "error")
+            select(func.count(DataSource.id)).where(DataSource.status == DataSourceStatus.error)
         )
         inactive_result = await self.db.execute(
-            select(func.count(DataSource.id)).where(DataSource.status == "inactive")
+            select(func.count(DataSource.id)).where(DataSource.status == DataSourceStatus.inactive)
         )
         total_result = await self.db.execute(select(func.count(DataSource.id)))
 

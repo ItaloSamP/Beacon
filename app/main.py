@@ -1,3 +1,5 @@
+import traceback
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,4 +45,19 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         content={"data": None, "error": "validation_error", "message": "; ".join(messages)},
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    traceback.print_exc()
+    exc_name = type(exc).__name__
+    return JSONResponse(
+        status_code=500,
+        content={
+            "data": None,
+            "error": "internal_error",
+            "message": f"Internal server error ({exc_name}). Check server logs for details.",
+            "detail": str(exc),
+        },
     )

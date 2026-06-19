@@ -156,7 +156,7 @@ describe('AnomaliesListPage', () => {
 
     it('should show empty state when no anomalies', async () => {
       server.use(
-        http.get('http://localhost:8000/api/v1/anomalies', () => {
+        http.get('/api/v1/anomalies', () => {
           return HttpResponse.json(
             { data: [], meta: { page: 1, per_page: 50, total: 0, active_count: 0 }, error: null },
             { status: 200 }
@@ -176,7 +176,7 @@ describe('AnomaliesListPage', () => {
 
     it('should show error state on API failure', async () => {
       server.use(
-        http.get('http://localhost:8000/api/v1/anomalies', () => {
+        http.get('/api/v1/anomalies', () => {
           return HttpResponse.json(
             {
               data: null,

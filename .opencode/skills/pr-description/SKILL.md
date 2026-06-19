@@ -49,13 +49,13 @@ Check branch name and commit messages for:
 ### Step 4: Collect Test Evidence
 ```bash
 # Find test logs
-ls .opencode/work/logs/test-run-*.md
+ls -t .opencode/work/logs/test-run-*.md | head -1
 
 # Find coverage report
-ls .opencode/work/logs/coverage-*.md
+ls -t .opencode/work/logs/coverage-*.md | head -1
 
 # Find security scan
-ls .opencode/work/logs/security-*.md
+ls -t .opencode/work/logs/security-*.md | head -1
 ```
 
 ---
@@ -199,7 +199,7 @@ difficult. This refactor improves test coverage from 45% to 92%.
 **Linked Issue:** #42
 
 **Test Evidence:**
-- Test Log: .opencode/work/logs/test-run-42.md
+- Test Log: .opencode/work/logs/test-run-42-20240315.md
 - Coverage: 87%
 - Security: Passed
 

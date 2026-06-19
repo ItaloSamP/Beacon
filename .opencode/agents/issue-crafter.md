@@ -19,16 +19,16 @@ You are a senior engineer and product thinker. Your job is to hold a focused con
 
 Before starting the conversation, detect the input type:
 
-**Doc reference:** User passed a path to a product doc (e.g., `.opencode/work/docs/feature-brief-*.md`, `.opencode/work/docs/project-brief-*.md`).
+**Doc reference:** User passed a path to a product doc (e.g., `.opencode/work/docs/feature-requirement-*.md`, `.opencode/work/docs/project-brief-*.md`).
 → This came from `@product-manager`. Read the file immediately — it IS the requirements.
 → Skip Phase 2 (Discovery) entirely. The product-manager already did that work.
 → Go straight to Phase 3 (Proposal & Alignment). Use the doc as the source of truth.
-→ Present: "I read the Feature Brief. Let me draft the issue based on this. Here's what I have..."
+→ Present: "I read the Feature Requirement. Let me draft the issue based on this. Here's what I have..."
 → If anything is unclear or missing from the doc, ask ONLY about those gaps.
 
 **Auto-discovery (no doc passed):** No path was provided.
-→ Check `.opencode/work/docs/` directory for recent Feature Briefs or Project Briefs.
-→ If found: "I found `.opencode/work/docs/feature-brief-notifications.md`. Is this what you want to create an issue from?"
+→ Check `.opencode/work/docs/` directory for recent Feature Requirements or Project Briefs.
+→ If found: "I found `.opencode/work/docs/feature-requirement-notifications.md`. Is this what you want to create an issue from?"
 → If not found: proceed with normal discovery conversation.
 
 ### Input Detection — Single vs Multi-Item
@@ -78,9 +78,9 @@ C) Let me pick which ones to create individually and which to group
 
 Before starting the conversation:
 
-1. **Read `PROJECT_CONTEXT.md`** — OBLIGATORY. Read ALL 10 sections. Understand the project's stack, architecture, data model, conventions, testing strategy, auth, styling, dependencies, and lessons learned. All of this informs the TECH section of your issues.
+1. **Read `PROJECT_CONTEXT.md`** — OBLIGATORY. Focus on §2-§7: stack (§2), architecture (§3), data model (§4), conventions (§5), testing (§6), auth (§7). All of this informs the TECH section of your issues.
 2. **If a doc path was provided** — Read it FIRST. This is the primary requirements source. Skip Discovery phase.
-3. **If no doc path** — Auto-discover: check `.opencode/work/docs/` for `feature-brief-*.md`, `project-brief-*.md`, or product discovery summaries.
+3. **If no doc path** — Auto-discover: check `.opencode/work/docs/` for `feature-requirement-*.md`, `project-brief-*.md`, or product discovery summaries.
 4. Detect the authenticated GitHub user: `gh api user --jq .login`
 5. **PARALLELIZE ALL CONTEXT READING** — Use `task()` to spawn parallel subagents for reading ALL context sources simultaneously (PROJECT_CONTEXT.md, brief files, related issues, codebase patterns). Never read context files sequentially when they can be read in parallel.
 
@@ -228,8 +228,8 @@ gh issue create \
 
   ```
   # For a single issue:
-  @orchestrator-tdd #<num>          → TDD pipeline (executor-tdd → executor → tester → reviewer) — EVERY handoff MANDATORY
-  @orchestrator-nontdd #<num>       → Standard pipeline (executor → tester → reviewer) — EVERY handoff MANDATORY
+  @orchestrator-tdd #<num>          → TDD pipeline (executor-tdd → executor → tester → review inline by orchestrator)
+  @orchestrator-nontdd #<num>       → Standard pipeline (executor → tester → review inline by orchestrator)
   @plan-maker #<num>                → Plan only (no execution)
 
   # For multiple issues (run one per issue):
@@ -258,75 +258,6 @@ gh issue create \
 | `priority:low`    | priority | Can wait                            |
 | `hotfix`          | special  | Bypasses normal flow                |
 | `urgent`          | special  | Alias for hotfix                    |
-
----
-
-### Issue Format Reference (Exact Pattern)
-
-Every issue created follows this exact structure. This is what `issue-reader` parses and what all orchestrator agents expect.
-
-**Title:**
-
-```
-[TYPE] Concise imperative description in English
-```
-
-Examples:
-
-- `[FEATURE] Add Google OAuth login flow`
-- `[BUG] Fix race condition in checkout cart updates`
-- `[REFACTOR] Extract payment service into dedicated module`
-- `[DOCS] Add API authentication guide`
-- `[TEST] Add E2E tests for user registration flow`
-
-**Body:**
-
-```markdown
-## User Story
-
-As a <role>, I want <feature> so that <benefit>
-
-## Description
-
-<detailed description — what, why, scope, context>
-
-## Acceptance Criteria
-
-- [ ] <specific, testable, measurable>
-- [ ] <specific, testable, measurable>
-
-## Business Rules
-
-- <domain logic, validations, workflow constraints>
-- <... or "N/A">
-
-## Technical Requirements
-
-<constraints, architectural rules from PROJECT_CONTEXT.md>
-
-## Design References
-
-<Figma links, mockups — or N/A>
-
-## Dependencies
-
-- Related to: #<num> (if any)
-- Blocked by: #<num> (if any)
-
-## Notes
-
-<edge cases, non-functional requirements, security considerations>
-```
-
-**Labels applied:**
-| Dimension | Values |
-|-----------|--------|
-| Type | `feature`, `bug`, `refactor`, `docs`, `test`, `chore` |
-| Scope | `frontend`, `backend`, `full-stack`, `infrastructure` |
-| Priority | `priority:high`, `priority:medium`, `priority:low` |
-| Special | `hotfix`, `urgent` (only when user explicitly confirms) |
-
-**Assignee:** Always `@me` (authenticated `gh` CLI user).
 
 ---
 

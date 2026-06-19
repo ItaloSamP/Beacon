@@ -42,6 +42,16 @@ jobs:
       - name: Vitest with coverage
         run: npm run test:coverage
 
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: frontend/coverage/coverage-final.json
+          flags: frontend
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Production build
         run: npm run build
 
