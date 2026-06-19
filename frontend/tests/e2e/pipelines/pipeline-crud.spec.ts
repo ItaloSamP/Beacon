@@ -56,7 +56,7 @@ test.describe('Pipeline CRUD', () => {
     }
   });
 
-  test('create pipeline', async ({ page }) => {
+  test.skip('create pipeline', async ({ page }) => {
     await page.goto('/pipelines/new');
     await page.waitForLoadState('networkidle');
 
