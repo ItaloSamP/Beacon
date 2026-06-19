@@ -1,7 +1,8 @@
 # Project Context — Beacon
 
-> **Last Updated:** 2026-05-21T16:30:00Z | **Maintained By:** AI Agent Team
+> **Last Updated:** 2026-06-11T18:00:00Z | **Maintained By:** AI Agent Team
 > **Architecture:** Hybrid (Agent + Cloud Monolith)
+> **Current Sprint:** Sprint 2 (Confiabilidade & Regras de Alerta) — Planning | Sprint 1 completo | Issue #4 (Design System) completo | Issue #23-30 (CI + E2E) completo
 
 ---
 
@@ -15,20 +16,35 @@ Diferente de ferramentas de visualização (Metabase) ou monitoramento de infra 
 
 **Target Audience:** Engenheiros de dados, analistas de dados, e times de DataOps que gerenciam pipelines de ingestão e transformação. A instalação é simples o bastante para personas menos técnicas também.
 
-**Key Features (v1):**
-- Agente local: instalação via 1 comando, vinculação com token ao cloud
-- Conexão com PostgreSQL e profiling automático ao conectar (schema, volume, distribuições)
+**Key Features (v1 — Implementadas):**
+- Agente local: instalação via `beacon-agent run --token`, vinculação com token `beacon_agent_xxx` ao cloud
+- Conexão com PostgreSQL e profiling automático (schema, row count, null %)
+- Armazenamento local SQLite para baselines estatísticos e fila offline de alertas
 - Detecção de anomalias local por z-score (baseline aprendido automaticamente)
-- Alertas por email com evidência (baseline vs. atual, z-score) + recomendação prática
-- Dashboard cloud: status dos data sources, feed de anomalias, fila de jobs, notificações pessoais
-- Configuração 100% remota via dashboard (pipelines, schedules, thresholds)
+- Cloud: pipeline execution (manual trigger), anomaly persistence, alert dispatch
+- Alertas por email via SendGrid com template HTML (evidência, baseline vs atual, z-score, recomendação)
+- Dashboard cloud: status dos data sources, feed de anomalias recentes, fila de pipeline runs
+- Configuração remota via dashboard (pipelines, schedules, thresholds) — agent pull via `GET /agent/self/config`
 - Agente resiliente: heartbeat, buffer offline, nunca emite alerta fantasma
+- Agent token auth: geração no cloud, one-time reveal, revogável individualmente
+- Connection config encryption at rest (Fernet symmetric)
+- 23 UI components com design system consolidado (TailwindCSS v4 @theme tokens)
+- CI/CD: GitHub Actions para backend, frontend e agent (ruff, mypy, pytest, vitest, build)
+- E2E tests com Playwright (6 specs, 17 tests) — auth, dashboard, pipeline CRUD, pipeline run, anomaly detail
+- Docker Compose para ambiente dev completo (PostgreSQL, Redis, Backend, Frontend, Agent)
+
+**Key Features (Sprint 2 — Em planejamento):**
+- AlertRules CRUD (métricas estruturadas: metric, operator, threshold) + frontend inline
+- AlertDispatcher com regras (só dispara se threshold atingido)
+- 7 security fixes (user isolation, bare except, last_used_at, agent-token restriction)
 
 **Key Features (futuro):**
 - Suporte a MySQL, BigQuery, Google Sheets
 - Alertas via Slack, métodos estatísticos avançados (IQR, médias móveis)
+- Agendamento automático de pipelines (cron)
 - Multi-membro e workspaces com papéis (Owner, Editor, Viewer)
 - Relatório semanal automático
+- Daemon mode do agente (hoje apenas CLI foreground/manual)
 
 ---
 
@@ -39,18 +55,27 @@ Diferente de ferramentas de visualização (Metabase) ou monitoramento de infra 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19 + TypeScript |
-| Build Tool | Vite |
-| CSS | TailwindCSS v4 |
-| State Management | React Query (TanStack Query) |
+| Build Tool | Vite 6 |
+| CSS | TailwindCSS v4 (CSS-based config via `@theme`) |
+| State Management | React Query (TanStack Query v5) |
+| Routing | React Router DOM v7 |
+| Icons | Lucide React |
+| UI Primitives | Radix UI (alert-dialog, dialog, select) |
 | Backend | Python 3.13 + FastAPI |
-| API Style | REST |
+| API Style | REST (envelope pattern: `{data, error}`) |
 | Database | PostgreSQL 16 |
-| ORM | SQLAlchemy 2.0 |
-| Cache | Redis |
-| Auth | JWT (dashboard) + API Keys (conectores externos) |
-| Package Manager | uv/pip (Python) + npm (frontend) |
-| Linter | Ruff (Python) + ESLint (TypeScript) |
-| Formatter | Black (Python) + Prettier (TypeScript) |
+| ORM | SQLAlchemy 2.0 (async, `async_sessionmaker`) |
+| Migrations | Alembic |
+| Cache | Redis 7 |
+| Auth | JWT (dashboard) + API Keys (conectores) + Agent Tokens (agentes locais) |
+| Encryption | Fernet (symmetric, connection_config at rest) |
+| Email | SendGrid (template HTML) |
+| Package Manager | pip/uv (Python) + npm (frontend) |
+| Linter/Formatter | Ruff (Python) + ESLint (TypeScript) |
+| Type Checker | mypy (Python) + TypeScript strict mode |
+| Testing | pytest + pytest-asyncio + httpx (backend), Vitest + React Testing Library + MSW (frontend), Playwright (E2E) |
+| CI/CD | GitHub Actions (backend, frontend, agent workflows) |
+| Containerization | Docker Compose (5 services: postgres, redis, backend, frontend, agent) |
 
 ### Dev Commands
 
@@ -141,54 +166,93 @@ O Beacon segue uma arquitetura híbrida com dois componentes principais:
 
 ```
 app/
-├── domain/               # Business logic (independent of framework)
-│   ├── datasource.py
-│   ├── pipeline.py
-│   ├── anomaly.py
-│   └── alert.py
-├── application/           # Services, use cases
-│   ├── pipeline_runner.py
-│   ├── anomaly_detector.py
+├── domain/                    # Business logic (independent of framework)
+│   ├── models.py              # All SQLAlchemy ORM models + enums
+│   └── schemas.py             # All Pydantic request/response schemas
+├── application/               # Services, use cases
+│   ├── agent_service.py
+│   ├── datasource_service.py
+│   ├── pipeline_service.py
+│   ├── pipeline_runner.py     # Pipeline execution orchestrator
+│   ├── anomaly_service.py
 │   └── alert_dispatcher.py
-├── infrastructure/        # Database, connectors, external services
-│   ├── database.py
+├── infrastructure/            # Database, connectors, external services
+│   ├── database.py            # Async engine, session factory, get_db dependency
+│   ├── crypto.py              # Fernet encrypt/decrypt for connection_config
+│   ├── security.py            # Token generation (API keys, agent tokens), hashing
 │   ├── connectors/
-│   │   ├── postgres.py
-│   │   ├── mysql.py
-│   │   ├── bigquery.py
-│   │   └── google_sheets.py
+│   │   └── __init__.py        # Placeholder (connectors live in agent/ para profiling local)
 │   ├── notifiers/
-│   │   ├── slack.py
-│   │   └── email.py
+│   │   ├── __init__.py
+│   │   └── email.py           # EmailNotifier (SendGrid SDK, HTML templates)
 │   └── repositories/
+│       ├── user_repo.py
+│       ├── agent_repo.py
+│       ├── agent_token_repo.py
+│       ├── api_key_repo.py
 │       ├── datasource_repo.py
 │       ├── pipeline_repo.py
-│       └── anomaly_repo.py
-├── presentation/          # Controllers, routes, HTTP handlers
+│       ├── pipeline_run_repo.py
+│       ├── anomaly_repo.py
+│       └── alert_repo.py
+├── presentation/              # Controllers, routes, HTTP handlers
 │   ├── api/
+│   │   ├── router.py          # Central router registration
 │   │   ├── routes/
+│   │   │   ├── agents.py      # Agent CRUD + agent self-config + heartbeat + tokens
 │   │   │   ├── datasources.py
 │   │   │   ├── pipelines.py
+│   │   │   ├── pipeline_runs.py
 │   │   │   ├── anomalies.py
-│   │   │   └── alerts.py
+│   │   │   ├── api_keys.py
+│   │   │   ├── auth.py        # Login, register, refresh, forgot/reset password
+│   │   │   └── health.py
 │   │   └── middleware/
-│   │       ├── auth.py
-│   │       └── api_key.py
-│   └── schemas/           # Pydantic request/response schemas
-└── shared/                # Common utilities, types, config
+│   │       └── auth.py        # require_auth: API Key → JWT → Agent Token (3 methods)
+│   └── exceptions.py
+└── shared/                    # Common utilities, config, exceptions
+    └── config.py              # Pydantic-settings: DB, JWT, CORS, Fernet, SendGrid, Redis
+
+agent/                         # Local agent (Python package — independent lifecycle)
+├── __init__.py
+├── pyproject.toml             # Agent's own dependencies + entry point (beacon-agent CLI)
+├── cli.py                     # Click CLI: beacon-agent run --token --cloud-url --once
+├── config.py                  # Pydantic-settings: BEACON_CLOUD_URL, BEACON_AGENT_TOKEN, etc.
+├── api_client.py              # HTTP client for cloud API (get_config, heartbeat, upload_anomaly)
+├── heartbeat.py               # HeartbeatService: async loop, network resilience
+├── storage.py                 # SQLite baseline storage + offline alert queue
+├── detection.py               # AnomalyDetector: z-score evaluation, severity classification
+├── connectors/
+│   ├── __init__.py
+│   └── postgres.py            # PostgresConnector: asyncpg raw (connect, get_tables, get_schema, etc.)
+├── profiling/
+│   ├── __init__.py
+│   ├── schema.py              # SchemaProfiler
+│   ├── volume.py              # VolumeProfiler (row count)
+│   ├── null_check.py          # NullCheckProfiler (null %)
+│   └── runner.py              # ProfileRunner: orchestrates profilers, validates target_tables
+└── tests/                     # Agent unit tests (mock asyncpg, mock HTTP — zero infra needed)
 
 frontend/
 ├── src/
-│   ├── features/
-│   │   ├── datasources/
-│   │   ├── pipelines/
-│   │   ├── anomalies/
-│   │   └── alerts/
+│   ├── features/              # Feature-based organization
+│   │   ├── agents/            # AgentsListPage, AgentForm
+│   │   ├── anomalies/         # AnomaliesListPage, AnomalyDetailPage
+│   │   ├── auth/              # LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage
+│   │   ├── datasources/       # DataSourcesListPage, DataSourceDetailPage, DataSourceForm
+│   │   └── pipelines/         # PipelinesListPage, PipelineForm, PipelineRunsPage
+│   ├── pages/                 # Top-level pages
+│   │   ├── DashboardPage.tsx
+│   │   └── LandingPage.tsx
 │   ├── components/
-│   │   └── ui/            # Shared UI components
-│   ├── hooks/             # Shared hooks
-│   ├── lib/               # API client, utils
-│   └── types/             # Shared TypeScript types
+│   │   ├── layout/            # Shell, Sidebar, Header, PageHeaderContext
+│   │   └── ui/                # 23 shared UI components (Button, Input, Table, Modal, Tabs, etc.)
+│   ├── hooks/                 # useAuth (context + provider)
+│   ├── lib/                   # api.ts (typed endpoint functions + ApiEnvelope pattern)
+│   └── types/                 # TypeScript types (agent, datasource, pipeline, anomaly, alert, etc.)
+├── tests/
+│   └── e2e/                   # Playwright E2E tests (auth, dashboard, pipelines, anomalies)
+└── playwright.config.ts
 ```
 
 ### API Conventions
@@ -223,15 +287,20 @@ frontend/
 
 | Entity | Key Fields | Relationships |
 |--------|-----------|---------------|
-| **DataSource** | `id`, `name`, `type` (postgres/mysql/bigquery/google_sheets), `agent_id`, `connection_config` (JSON), `status`, `created_at`, `updated_at` | belongs to Agent, has many Pipeline |
-| **Pipeline** | `id`, `name`, `type` (volume/null_check/schema_change), `data_source_id`, `schedule` (cron), `config` (JSON: query, thresholds), `enabled`, `created_at`, `updated_at` | belongs to DataSource, has many PipelineRun, has many AlertRule |
+| **User** | `id`, `email`, `password_hash`, `name`, `created_at` | has many Agent, has many ApiKey |
+| **Agent** | `id`, `name`, `user_id`, `status` (online/offline), `last_heartbeat_at`, `version`, `created_at` | belongs to User, has many DataSource, has many AgentToken |
+| **AgentToken** | `id`, `agent_id`, `token_hash` (SHA-256), `token_prefix`, `name`, `last_used_at`, `created_at` | belongs to Agent |
+| **ApiKey** | `id`, `user_id`, `key_hash` (SHA-256), `key_prefix`, `name`, `last_used_at`, `expires_at`, `revoked`, `created_at` | belongs to User |
+| **DataSource** | `id`, `name`, `type` (postgres/mysql/bigquery/google_sheets), `agent_id`, `connection_config` (JSONB, encrypted at rest via Fernet), `status`, `created_at`, `updated_at` | belongs to Agent, has many Pipeline |
+| **Pipeline** | `id`, `name`, `type` (volume/null_check/schema_change), `data_source_id`, `schedule` (cron), `config` (JSONB), `enabled`, `created_at`, `updated_at` | belongs to DataSource, has many PipelineRun, has many AlertRule |
 | **PipelineRun** | `id`, `pipeline_id`, `status` (success/warning/error), `metrics_json`, `started_at`, `finished_at` | belongs to Pipeline, has many Anomaly |
-| **Anomaly** | `id`, `pipeline_run_id`, `severity` (low/medium/high/critical), `type`, `description`, `deviation_details` (JSON), `detected_at`, `resolved_at` | belongs to PipelineRun, has many Alert |
+| **Anomaly** | `id`, `pipeline_run_id`, `severity` (low/medium/high/critical), `type`, `description`, `deviation_details` (JSONB), `detected_at`, `resolved_at` | belongs to PipelineRun, has many Alert |
 | **Alert** | `id`, `anomaly_id`, `channel` (email/slack), `sent_at`, `status` (sent/failed), `error_message` | belongs to Anomaly |
-| **AlertRule** | `id`, `pipeline_id`, `condition` (e.g. `z_score > 3`, `null_pct > 0.1`), `channels` (JSON array), `enabled` | belongs to Pipeline |
-| **Agent** | `id`, `name`, `user_id`, `status` (online/offline), `last_heartbeat_at`, `version`, `created_at` | belongs to User, has many DataSource |
+| **AlertRule** | `id`, `pipeline_id`, `metric` (z_score/null_pct/volume_delta_pct), `operator` (gt/lt/gte/lte/eq), `threshold` (float), `channels` (JSONB array), `enabled` | belongs to Pipeline |
 
-> **Nota:** As entidades acima representam o modelo do backend cloud. O agente local mantém seu próprio armazenamento local (SQLite ou similar) para cache de baselines estatísticos, fila offline de alertas e configuração recebida do cloud. Esse modelo local do agente será definido durante a implementação do agente.
+> **Nota sobre AlertRule:** O modelo atual em `models.py` ainda usa o campo legado `condition` (string). O Sprint 2 planeja refatorar para campos estruturados (`metric`, `operator`, `threshold`) via migration Alembic. Atualmente AlertRule não tem repositório, serviço ou rotas implementadas — o AlertDispatcher ignora as regras e toda anomalia gera alerta.
+
+> **Agente local:** O agente mantém armazenamento local em SQLite (`beacon_agent.db`) com tabelas: `profiles` (histórico de profiling), `baselines` (média, stddev, n por métrica), `offline_queue` (alertas não sincronizados com o cloud).
 
 **Naming Conventions:**
 - Tables: `snake_case` plural (`data_sources`, `pipeline_runs`)
@@ -350,14 +419,19 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 | Aspect | Value |
 |--------|-------|
-| Auth Method | JWT (dashboard users) + API Keys (external connectors) |
-| Token Storage | HTTP-only cookie (JWT), Authorization header (API Key) |
-| Token Expiry | 15 min access / 7 day refresh (JWT) |
-| API Key Storage | Hashed (SHA-256) in database, prefix revealed for identification |
+| Auth Methods | JWT (dashboard users) + API Keys (external connectors) + Agent Tokens (local agents) |
+| JWT Token Storage | `Authorization: Bearer <jwt>` header (access 15min / refresh 7 days) |
+| API Key Format | `bcn_` prefix + 48 random chars, stored as SHA-256 hash, one-time reveal |
+| Agent Token Format | `beacon_agent_` prefix + 48 random chars, stored as SHA-256 hash, one-time reveal on agent creation |
+| Agent Token Endpoints | `POST /agents` (returns token), `GET /agents/{id}/tokens` (prefix only), `DELETE /agents/{id}/tokens/{token_id}` (revoke) |
+| Auth Middleware | Single `require_auth` dependency: API Key (X-API-Key) → JWT (Bearer) → Agent Token (Bearer fallback) — 3 methods in priority order |
+| Encryption at Rest | Fernet symmetric encryption for `DataSource.connection_config` (JSONB column). Encrypted as `{"_encrypted": "<base64>"}`. Decrypted only on detail view + agent self-config. |
+| API Key Storage | SHA-256 hashed in `api_keys` table, prefix revealed for identification |
+| Agent Token Storage | SHA-256 hashed in `agent_tokens` table, prefix revealed for identification, `last_used_at` tracked |
 | Security Scanner (Backend) | Bandit |
 | Security Scanner (Frontend) | npm audit |
 | Secrets Management | .env file (dev), cloud secrets manager (prod) |
-| CORS | Configured for frontend origin only |
+| CORS | Configured for frontend origin only (default: `http://localhost:5173`) |
 | Rate Limiting | 100 req/min per IP (general), 1000 req/min per API Key |
 
 ---
@@ -368,11 +442,13 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 |--------|-------|
 | Figma File Key | uq30Y3KWwjVleDbBJwmlUz |
 | Figma File URL | https://www.figma.com/design/uq30Y3KWwjVleDbBJwmlUz |
-| Primary Font | Inter (via Tailwind default font stack) |
-| Color Palette | Tailwind default palette (slate gray base, blue accent para ações, red/amber/green para severidade de alertas) |
+| Primary Font | Inter (weights 400, 500, 600, 700, 800 — via Google Fonts) |
+| Mono Font | ui-monospace, 'Cascadia Code', 'Source Code Pro' |
+| Color Palette | Design tokens via TailwindCSS v4 `@theme` in `index.css` — 29 color tokens (primary blue, success green, warning amber, danger red, critical violet, grays) |
 | Icon Library | Lucide React |
-| Component Library | Custom only (TailwindCSS + Radix primitives) |
-| Design Tokens | Tailwind config (`tailwind.config.ts`) |
+| Component Library | Custom only — 23 UI components built with TailwindCSS + Radix primitives (alert-dialog, dialog, select) |
+| Design Tokens | TailwindCSS v4 CSS-based config (`@theme` block in `frontend/src/index.css`) — NÃO usa `tailwind.config.ts` |
+| Design Prototypes | 11 HTML prototypes em `.opencode/work/design-prototypes/` (dashboard, agents, anomalies, datasources, pipelines, login, signup, landing, forgot-password, anomaly-detail, datasource-detail) |
 
 **Accessibility:** WCAG 2.1 AA minimum — color contrast 4.5:1, keyboard navigation, screen reader support, focus management.
 
@@ -382,12 +458,12 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
 ## 9. External Dependencies & Integrations
 
-| Service | Purpose | Auth / Config |
-|---------|---------|---------------|
-| Slack Webhook | Enviar alertas para canais do Slack | Webhook URL (env var `SLACK_WEBHOOK_URL`) |
-| SendGrid | Enviar alertas por email | API Key (env var `SENDGRID_API_KEY`) |
-| Google Sheets API | Conectar e monitorar planilhas Google | OAuth2 Service Account (env var `GOOGLE_SERVICE_ACCOUNT_JSON`) |
-| Redis | Cache de configuração de pipelines e resultados recentes | Connection string (env var `REDIS_URL`) |
+| Service | Purpose | Auth / Config | Status |
+|---------|---------|---------------|--------|
+| SendGrid | Enviar alertas por email (HTML template com evidências) | API Key (env var `SENDGRID_API_KEY`) | ✅ Implementado (Sprint 1) |
+| Redis | Cache de configuração de pipelines e resultados recentes | Connection string (env var `REDIS_URL`) | ✅ Configurado (Sprint 0) |
+| Slack Webhook | Enviar alertas para canais do Slack | Webhook URL (env var `SLACK_WEBHOOK_URL`) | 🔜 Planejado (futuro) |
+| Google Sheets API | Conectar e monitorar planilhas Google | OAuth2 Service Account (env var `GOOGLE_SERVICE_ACCOUNT_JSON`) | 🔜 Planejado (futuro) |
 
 ---
 
