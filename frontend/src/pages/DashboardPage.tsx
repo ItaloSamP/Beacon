@@ -123,20 +123,6 @@ export function DashboardPage() {
     refetchInterval: 60000,
   });
 
-  // If session expired, the Shell will redirect — show nothing
-  if (
-    healthErrorObj instanceof SessionExpiredError ||
-    dsErrorObj instanceof SessionExpiredError ||
-    anomaliesErrorObj instanceof SessionExpiredError ||
-    runsErrorObj instanceof SessionExpiredError
-  ) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
   const health = healthData?.data;
   const dataSources = dsData?.data ?? [];
   const anomalies = anomaliesData?.data ?? [];
@@ -188,6 +174,20 @@ export function DashboardPage() {
     </Link>
   );
   useSetPageHeader('Dashboard', headerActions);
+
+  // If session expired, the Shell will redirect — show nothing
+  if (
+    healthErrorObj instanceof SessionExpiredError ||
+    dsErrorObj instanceof SessionExpiredError ||
+    anomaliesErrorObj instanceof SessionExpiredError ||
+    runsErrorObj instanceof SessionExpiredError
+  ) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div data-testid="dashboard">
