@@ -69,7 +69,7 @@ Flag high-risk uncovered areas:
 
 ### Step 4: Generate Report
 
-Save to `.opencode/work/logs/coverage-<issue-num>.md`:
+Save to `.opencode/work/logs/coverage-<issue-num>-<timestamp>.md`:
 
 ```markdown
 # Coverage Report
@@ -175,7 +175,7 @@ if (arr.length === 0) {
 ```
 ## Coverage Report Generated
 
-**File:** .opencode/work/logs/coverage-42.md
+**File:** .opencode/work/logs/coverage-42-20240315-143022.md
 **Issue:** #42
 
 ### Summary

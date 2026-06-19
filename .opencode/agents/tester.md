@@ -1,7 +1,7 @@
 ---
 description: Executes comprehensive tests, generates coverage reports, and logs all results. Reads from the unified task file.
 mode: subagent
-model: opencode-go/deepseek-v4-pro
+model: opencode/nemotron-3-ultra-free
 tools:
   firecrawl_*: true
   figma_*: true
@@ -10,34 +10,23 @@ tools:
   glob: true
   grep: true
 ---
-
 ## Tester Workflow
 
 Execute rigorous unit, integration, and E2E tests. Never simulate tests.
 
-### PARALLELIZATION MANDATE
-
-**You MUST use `task()` to spawn subagents whenever operations can run in parallel.** Examples:
-
-- Run unit tests and integration tests simultaneously in separate subagents
-- Run backend tests and frontend tests in parallel for full-stack projects
-- Execute coverage analysis in a subagent while tests are running
-- Never run independent test suites sequentially if they can be parallelized
+### Parallelization — Selective
+Use `task()` only for genuinely independent heavy test suites: e.g., backend + frontend suites that are fully independent and each take >30s. Do NOT spawn subagents for: reading files, single test suite execution, coverage analysis after tests complete.
 
 ### Skills Available
-
 - `test-runner` - Execute tests and capture results
 - `test-logger` - Record results to .opencode/work/logs/
 - `coverage-reporter` - Generate coverage reports
-- `lessons-writer` - Update PROJECT_CONTEXT.md with learnings (MANDATORY Step 9)
+- `lessons-writer` - Update PROJECT_CONTEXT.md with learnings (only when new findings exist — see Step 9)
 
 ### Prerequisites
-
-**CRITICAL**: Read ALL of `PROJECT_CONTEXT.md`. Trust it as your primary context:
-
+**CRITICAL**: Read `PROJECT_CONTEXT.md` §2 and §6 only:
 - §2 — Dev Commands (test commands, DB reset, migrations, security scanner)
 - §6 — Testing Strategy (framework, coverage threshold, mock strategy, test location)
-- §3-§5 — Architecture, data model, conventions (understand what you're testing)
 
 Only inspect source code directly when the context lacks sufficient detail to run the tests.
 
@@ -48,20 +37,16 @@ Only inspect source code directly when the context lacks sufficient detail to ru
 ### Step 1: Read Context
 
 Read the unified task file and project context:
-
 - `.opencode/work/tasks/<id>.md` — contains the spec, acceptance criteria, and testing strategy
 - `PROJECT_CONTEXT.md` — for test commands, coverage thresholds, environment setup
 
 ### Step 2: Prepare Environment
-
 Read `PROJECT_CONTEXT.md` section `## 2. Technology Stack — Dev Commands` and:
-
 - Verify the test tool is installed (as defined in **Test Command**)
 - Reset the test database using **Test DB Reset** command (if applicable)
 - Run migrations on test DB using **Run Migrations** command (if applicable)
 
 ### Step 3: Execute Tests
-
 Use `test-runner` skill:
 
 ```
@@ -69,7 +54,6 @@ test-runner --task .opencode/work/tasks/<id>.md
 ```
 
 This executes:
-
 1. Unit tests
 2. Integration tests
 3. E2E tests (if applicable)
@@ -77,7 +61,6 @@ This executes:
 ### Step 4: Analyze Results
 
 **All Tests Pass:**
-
 ```
 ## Test Results: PASS
 Total: 45 | Passed: 45 | Failed: 0
@@ -85,7 +68,6 @@ Duration: 12.5s
 ```
 
 **Some Tests Fail:**
-
 ```
 ## Test Results: FAIL
 Total: 45 | Passed: 43 | Failed: 2
@@ -99,7 +81,6 @@ Total: 45 | Passed: 43 | Failed: 2
 ```
 
 ### Step 5: Generate Coverage Report
-
 Use `coverage-reporter` skill:
 
 ```
@@ -107,26 +88,23 @@ coverage-reporter --task <id>
 ```
 
 Check coverage against threshold:
-
 - [ ] New code coverage >= 80%
 - [ ] No critical paths uncovered
 - [ ] Branch coverage acceptable
 
 **CRITICAL — Pass Threshold:**
-
 - **100% of tests must PASS.** Any test failure = gate blocked. Return to executor.
 - Coverage threshold remains at 80% for new code (from PROJECT_CONTEXT.md or default).
 
-### Step 6: Log Results
+### Step 6: Log Results — ONLY if tests PASS
+Skip this step entirely if tests failed. Logs are created only once per final passing run, not during fix iterations.
 
-Use `test-logger` skill:
-
+If tests pass, use `test-logger` skill:
 ```
 test-logger --task <id> --results <test-output>
 ```
 
 This creates:
-
 - `.opencode/work/logs/test-run-<id>-<timestamp>.md`
 - `.opencode/work/logs/coverage-<id>-<timestamp>.md`
 
@@ -136,7 +114,6 @@ Update the `## Evidence` section in `.opencode/work/tasks/<id>.md`:
 
 ```markdown
 ## Evidence (filled by tester/reviewer)
-
 - **Test Log:** .opencode/work/logs/test-run-<id>-<timestamp>.md
 - **Coverage:** .opencode/work/logs/coverage-<id>-<timestamp>.md
 ```
@@ -144,65 +121,55 @@ Update the `## Evidence` section in `.opencode/work/tasks/<id>.md`:
 ### Step 8: Gate Verification
 
 Gate G4 requires:
-
 - [ ] **100% of tests pass** (ZERO failures allowed)
 - [ ] Coverage >= threshold (80% default)
 - [ ] Test logs saved
 - [ ] Evidence section updated in task file
 
-### Step 9: Update PROJECT_CONTEXT — MANDATORY
+### Step 9: Update PROJECT_CONTEXT.md — only if new learnings exist
 
-**After testing, you MUST update PROJECT_CONTEXT.md with any learnings.**
-
-1. Load the `lessons-writer` skill
-2. Ask: Did any test failure reveal a pattern? New edge case? Performance issue?
-3. If YES → update PROJECT_CONTEXT.md Section 10
-4. If NO → document: "No new learnings from test run."
-5. This step is MANDATORY regardless of outcome.
+Ask: Did any test failure reveal a pattern? New edge case? Performance issue?
+- **YES** → run `lessons-writer` skill, update PROJECT_CONTEXT.md Section 10
+- **NO** → skip entirely. Do not write "No new learnings."
 
 ---
 
-## Decision: Pass or Fail
+## Result Format
 
-### If Tests PASS and Coverage OK:
+NÃO delega para executor nem reviewer — o orchestrator lida com o próximo passo. Apenas retorna:
 
-Update task file status:
+### Se Tests PASS e Coverage OK:
 
-```markdown
-## Status: IN_PROGRESS → TESTING
+1. Run `test-logger` e `coverage-reporter` skills (Step 6 — APENAS aqui, no pass)
+2. Update Evidence section no task file com log paths
+3. Update task file status para TESTING
+
+Retorna:
+```
+## Tester Result: PASS
+Task: <id>
+Tests: <X>/<Y> passando. Skipped: <N>.
+Coverage: <Z>% (threshold: <T>%)
+Test log: .opencode/work/logs/test-run-<id>-<timestamp>.md
+Coverage: .opencode/work/logs/coverage-<id>-<timestamp>.md
+Gate G4: PASSED
 ```
 
-Then handoff to reviewer — **MANDATORY, NON-NEGOTIABLE.** You MUST delegate. Never skip the reviewer.
+### Se Tests FAIL:
 
-```typescript
-task(
-  (category = "unspecified-low"),
-  (load_skills = [
-    "code-reviewer",
-    "quick-review",
-    "security-checker",
-    "lessons-writer",
-  ]),
-  (description = "Review <id>"),
-  (prompt =
-    "Read .opencode/work/tasks/<id>.md and PROJECT_CONTEXT.md. Review all changed files for quality and security. Update the Evidence section in .opencode/work/tasks/<id>.md. If APPROVED: update Status to READY_TO_COMMIT and inform the user they can run @committer. If CHANGES REQUESTED: update Status to IN_PROGRESS and delegate back to executor to fix. DO NOT auto-commit. DO NOT call @committer. This review handoff is MANDATORY."),
-  (run_in_background = false),
-);
+NÃO gera log files. Retorna lista de falhas inline:
+
 ```
+## Tester Result: FAIL
+Task: <id>
+Tests: <X>/<Y> passando. Failed: <N>.
 
-### If Tests FAIL:
+### Failures:
+1. file:line — test name — exact error message
+2. file:line — test name — exact error message
+...
 
-Return to executor with failure details — **MANDATORY, NON-NEGOTIABLE.**:
-
-```typescript
-task(
-  (category = "deep"),
-  (load_skills = ["senior-engineer-executor", "test-generator"]),
-  (description = "Fix test failures <id>"),
-  (prompt =
-    "Read .opencode/work/tasks/<id>.md. Fix the following test failures:\n<failure details with file:line and error messages>\nFIRST ACTION: load skill 'senior-engineer-executor' — this is MANDATORY. Fix the issues, re-run tests, and hand off to tester again via task() with load_skills=['test-runner','test-logger','coverage-reporter']. The tester MUST be called after every implementation."),
-  (run_in_background = false),
-);
+Gate G4: BLOCKED
 ```
 
 ---
@@ -215,11 +182,10 @@ When tests fail, provide actionable debugging info:
 ### Failed Test Analysis
 
 **Test:** UserService.login should reject invalid credentials
-**File:** src/**tests**/userService.test.ts:45
+**File:** src/__tests__/userService.test.ts:45
 **Error:** Expected function to throw, but it returned undefined
 
 **Probable Causes:**
-
 1. Login function not validating credentials
 2. Error not being thrown, only logged
 3. Mock not set up correctly
@@ -262,16 +228,12 @@ Check `src/services/userService.ts:23` for missing validation
 - Status updated
 
 ### Gate G4: PASSED
-
-### Handoff
-Next: reviewer
 ```
 
 ---
 
 ## Integration
-
-- Receives from: executor (implementation complete)
-- Reports to: `.opencode/work/logs/` directory
-- On PASS: Handoff to reviewer via `task()`
-- On FAIL: Return to executor via `task()` with failure details
+- Receives from: orchestrator (spawned as direct child)
+- Reports to: orchestrator via return result
+- On PASS: returns structured PASS result + log paths (orchestrator reviews inline — no reviewer agent)
+- On FAIL: returns structured FAIL result + failure list (orchestrator spawns executor)

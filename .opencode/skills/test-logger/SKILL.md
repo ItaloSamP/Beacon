@@ -12,7 +12,7 @@ Persist test execution results to structured markdown files for traceability, au
 - Before creating a PR (to attach evidence)
 
 ### Log Location
-`.opencode/work/logs/test-run-<issue-num>.md`
+`.opencode/work/logs/test-run-<issue-num>-<timestamp>.md`
 
 ### Log File Structure
 ```markdown
@@ -140,9 +140,9 @@ Collect from test-runner:
 
 #### Step 2: Generate Filename
 ```
-test-run-<issue-num>.md
+test-run-<issue-num>-<YYYYMMDD-HHMMSS>.md
 ```
-Example: `test-run-42.md`
+Example: `test-run-42-20240315-143022.md`
 
 #### Step 3: Write Log File
 Save to `.opencode/work/logs/` directory
@@ -152,18 +152,19 @@ Append to `.opencode/work/logs/index.md` (create the file if it doesn't exist):
 ```markdown
 | Date | Issue | Tests | Result | Log |
 |------|-------|-------|--------|-----|
-| 2024-03-15 | #42 | 48 | PASS | [test-run-42.md](./test-run-42.md) |
+| 2024-03-15 | #42 | 48 | PASS | [test-run-42-20240315-143022.md](./test-run-42-20240315-143022.md) |
 ```
 
 ### Log Retention
 - Keep all logs for the duration of the issue
+- Archive to `.opencode/work/logs/archive/` after PR merge
 - Never delete failure logs
 
 ### Output Format
 ```
 ## Test Log Created
 
-**File:** .opencode/work/logs/test-run-42.md
+**File:** .opencode/work/logs/test-run-42-20240315-143022.md
 **Issue:** #42
 **Result:** PASS (46/48 tests)
 **Coverage:** 85.2%
