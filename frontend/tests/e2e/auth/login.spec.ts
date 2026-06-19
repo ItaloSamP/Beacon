@@ -25,9 +25,10 @@ test.describe('Auth — Login', () => {
     const password = 'ValidPass123!';
 
     // Register the user first via API
-    await page.request.post('http://localhost:8000/api/v1/auth/register', {
+    const regRes = await page.request.post('http://localhost:8000/api/v1/auth/register', {
       data: { email, password, name: 'Login Test User' },
     });
+    expect(regRes.ok(), `Registration failed: ${await regRes.text()}`).toBeTruthy();
 
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
