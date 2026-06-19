@@ -149,11 +149,13 @@ test.describe('Anomaly Detail', () => {
 
   test('invalid anomaly ID shows empty state', async ({ page }) => {
     await page.goto('/anomalies/invalid-id-99999');
-    await page.waitForLoadState('networkidle');
+
+    // Wait for auth verification to complete — Shell should NOT redirect to /login
+    await page.waitForURL(/\/anomalies\/invalid-id/, { timeout: 15000 });
 
     // Wait for either the empty state or error panel to appear
     const emptyState = page.locator('text=nao encontrada');
     const errorPanel = page.locator('text=Failed to load');
-    await expect(emptyState.or(errorPanel).first()).toBeVisible({ timeout: 10000 });
+    await expect(emptyState.or(errorPanel).first()).toBeVisible({ timeout: 15000 });
   });
 });
