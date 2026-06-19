@@ -6,7 +6,7 @@ test.describe('Pipeline Runs', () => {
 
   test.beforeEach(async ({ page }) => {
     // Log in and seed datasource + pipeline
-    const email = `e2e-run-${Date.now()}@beacon.test`;
+    const email = `e2e-run-${Date.now()}@beacon-e2e.dev`;
     const password = 'RunPass123!';
 
     await page.request.post('http://localhost:8000/api/v1/auth/register', {
