@@ -78,7 +78,7 @@ class Agent(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    status = Column(SAEnum(AgentStatus), default=AgentStatus.offline, nullable=False)
+    status = Column(SAEnum(AgentStatus, native_enum=False), default=AgentStatus.offline, nullable=False)
     last_heartbeat_at = Column(DateTime(timezone=True), nullable=True)
     version = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
@@ -92,11 +92,11 @@ class DataSource(Base):
     __tablename__ = "data_sources"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
-    type = Column(SAEnum(DataSourceType), nullable=False)
+    type = Column(SAEnum(DataSourceType, native_enum=False), nullable=False)
     # TODO: Make agent_id NOT NULL in Sprint 1
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="SET NULL"), nullable=True)
     connection_config = Column(JSONB, default=dict, nullable=False)
-    status = Column(SAEnum(DataSourceStatus), default=DataSourceStatus.active, nullable=False)
+    status = Column(SAEnum(DataSourceStatus, native_enum=False), default=DataSourceStatus.active, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -108,7 +108,7 @@ class Pipeline(Base):
     __tablename__ = "pipelines"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
-    type = Column(SAEnum(PipelineType), nullable=False)
+    type = Column(SAEnum(PipelineType, native_enum=False), nullable=False)
     data_source_id = Column(UUID(as_uuid=True), ForeignKey("data_sources.id", ondelete="CASCADE"), nullable=False)
     schedule = Column(String(100), nullable=True)
     config = Column(JSONB, default=dict, nullable=False)
@@ -123,7 +123,7 @@ class PipelineRun(Base):
     __tablename__ = "pipeline_runs"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pipeline_id = Column(UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False)
-    status = Column(SAEnum(PipelineRunStatus), nullable=False, default=PipelineRunStatus.success)
+    status = Column(SAEnum(PipelineRunStatus, native_enum=False), nullable=False, default=PipelineRunStatus.success)
     metrics_json = Column(JSONB, default=dict, nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)
@@ -134,7 +134,7 @@ class Anomaly(Base):
     __tablename__ = "anomalies"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pipeline_run_id = Column(UUID(as_uuid=True), ForeignKey("pipeline_runs.id", ondelete="CASCADE"), nullable=False)
-    severity = Column(SAEnum(AnomalySeverity), nullable=False)
+    severity = Column(SAEnum(AnomalySeverity, native_enum=False), nullable=False)
     type = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
     deviation_details = Column(JSONB, default=dict, nullable=True)
@@ -148,9 +148,9 @@ class Alert(Base):
     __tablename__ = "alerts"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     anomaly_id = Column(UUID(as_uuid=True), ForeignKey("anomalies.id", ondelete="CASCADE"), nullable=False)
-    channel = Column(SAEnum(AlertChannel), nullable=False)
+    channel = Column(SAEnum(AlertChannel, native_enum=False), nullable=False)
     sent_at = Column(DateTime(timezone=True), nullable=True)
-    status = Column(SAEnum(AlertStatus), nullable=False, default=AlertStatus.sent)
+    status = Column(SAEnum(AlertStatus, native_enum=False), nullable=False, default=AlertStatus.sent)
     error_message = Column(String(500), nullable=True)
 
     anomaly = relationship("Anomaly")
