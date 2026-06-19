@@ -8,6 +8,8 @@ Tests full HTTP lifecycle:
 - PUT /api/v1/datasources/{id} (200 update)
 - DELETE /api/v1/datasources/{id} (204 delete, 404 missing)
 - Agent relationship: agent_id field, validation, response enrichment
+- Health endpoint: GET /api/v1/datasources/health (200 OK, 500 JSON on internal error)
+- Connection config: masking in list, full in detail
 
 RED PHASE: Tests that reference agent_id will fail because the
 agent-related schema fields and route logic don't exist yet.
@@ -859,3 +861,51 @@ class TestDataSourceConnectionConfigMasking:
                 f"Updated host should be 'new-db.internal', got {cc.get('host')}"
             )
             assert cc.get("port") == 5433
+
+
+class TestDataSourceHealth:
+    """GET /api/v1/datasources/health"""
+
+    @pytest.mark.asyncio
+    async def test_health_endpoint(
+        self, async_client: AsyncClient, auth_headers: dict, test_db
+    ):
+        """
+        Happy path: health endpoint returns 200 with proper JSON structure
+        containing total, healthy, warning, error, offline counts.
+        """
+        response = await async_client.get(
+            "/api/v1/datasources/health", headers=auth_headers
+        )
+
+        assert response.status_code == 200, (
+            f"Expected 200, got {response.status_code}: {response.text}"
+        )
+
+        body = response.json()
+        assert body["error"] is None, f"Expected error=None, got {body['error']}"
+        assert "data" in body
+
+        health = body["data"]
+        required_keys = ["total", "healthy", "warning", "error", "offline"]
+        for key in required_keys:
+            assert key in health, f"Expected '{key}' in health response"
+            assert isinstance(health[key], int), (
+                f"Expected '{key}' to be int, got {type(health[key])}"
+            )
+
+    def test_global_exception_handler_registered(self):
+        """
+        Regression: verify the global exception handler is registered
+        on the FastAPI app to catch unhandled exceptions and return
+        JSON (not HTML) responses.
+
+        This is the fix for hotfix task where GET /api/v1/datasources/health
+        returned non-JSON response when the database was unreachable.
+        """
+        from app.main import app as fastapi_app
+
+        assert Exception in fastapi_app.exception_handlers, (
+            "Global exception handler for 'Exception' is not registered. "
+            "Add @app.exception_handler(Exception) in main.py."
+        )
