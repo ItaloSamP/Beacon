@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.presentation.api.routes import (
     agents,
+    alert_rules,
     alerts,
     anomalies,
     api_keys,
@@ -19,6 +20,7 @@ router.include_router(agents.router, tags=["agents"])
 router.include_router(agents.agent_self_router, tags=["agent-self"])
 router.include_router(datasources.router, tags=["datasources"])
 router.include_router(pipelines.router, tags=["pipelines"])
+router.include_router(alert_rules.router, tags=["alert-rules"])
 router.include_router(api_keys.router, tags=["api_keys"])
 router.include_router(pipeline_runs.router, tags=["pipeline-runs"])
 router.include_router(anomalies.router, tags=["anomalies"])
