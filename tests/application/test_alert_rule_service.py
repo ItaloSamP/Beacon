@@ -74,10 +74,9 @@ class TestAlertRuleService:
         data = AlertRuleCreate(
             metric="z_score", operator="gt", threshold=2.0, channels=["email"]
         )
-        rule = await service.create("pipeline-001", "user-001", data)
+        created_rule = await service.create("pipeline-001", "user-001", data)
 
         mock_rule_repo.create.assert_called_once()
-        created_rule = mock_rule_repo.create.call_args[0][0]
         assert created_rule.metric == "z_score"
         assert created_rule.operator == "gt"
         assert created_rule.threshold == 2.0
