@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     // Log in via API and set tokens before each test
-    const email = `e2e-dash-${Date.now()}@beacon.test`;
+    const email = `e2e-dash-${Date.now()}@beacon-e2e.dev`;
     const password = 'DashPass123!';
 
     const regRes = await page.request.post('http://localhost:8000/api/v1/auth/register', {

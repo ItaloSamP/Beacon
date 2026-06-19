@@ -18,7 +18,7 @@ export const test = base.extend<AuthFixtures>({
   authenticatedPage: [
     async ({ page }, use) => {
       // Register a test user first (idempotent — ignore if already exists)
-      const email = `e2e-${Date.now()}@beacon.test`;
+      const email = `e2e-${Date.now()}@beacon-e2e.dev`;
       const password = 'E2eTestPass123!';
 
       let registerResponse = await page.request.post(`${API_BASE}/auth/register`, {

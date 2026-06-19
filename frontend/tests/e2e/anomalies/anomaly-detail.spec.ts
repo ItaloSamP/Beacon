@@ -8,7 +8,7 @@ test.describe('Anomaly Detail', () => {
 
   test.beforeEach(async ({ page }) => {
     // Log in and seed full chain: datasource → pipeline → run → anomaly
-    const email = `e2e-anom-${Date.now()}@beacon.test`;
+    const email = `e2e-anom-${Date.now()}@beacon-e2e.dev`;
     const password = 'AnomPass123!';
 
     await page.request.post('http://localhost:8000/api/v1/auth/register', {

@@ -21,7 +21,7 @@ test.describe('Auth — Login', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill valid credentials (seeded via API by auth fixture or direct call)
-    const email = `e2e-login-${Date.now()}@beacon.test`;
+    const email = `e2e-login-${Date.now()}@beacon-e2e.dev`;
     const password = 'ValidPass123!';
 
     // Register the user first via API
