@@ -1,4 +1,11 @@
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = '/api/v1';
+
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('Session expired. Please log in again.');
+    this.name = 'SessionExpiredError';
+  }
+}
 
 let accessToken: string | null = localStorage.getItem('access_token');
 let refreshToken: string | null = localStorage.getItem('refresh_token');
@@ -15,6 +22,12 @@ export function clearTokens() {
   refreshToken = null;
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+}
+
+export function forceLogout() {
+  clearTokens();
+  localStorage.removeItem('beacon_user');
+  window.dispatchEvent(new CustomEvent('beacon:force-logout'));
 }
 
 export function getAccessToken() {
@@ -61,11 +74,19 @@ export async function apiRequest<T>(
 
   let response = await fetch(url, { ...options, headers });
 
-  if (response.status === 401 && refreshToken) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-      response = await fetch(url, { ...options, headers });
+  if (response.status === 401) {
+    if (refreshToken) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+        response = await fetch(url, { ...options, headers });
+      } else {
+        forceLogout();
+        throw new SessionExpiredError();
+      }
+    } else {
+      forceLogout();
+      throw new SessionExpiredError();
     }
   }
 
@@ -73,7 +94,17 @@ export async function apiRequest<T>(
     return undefined as unknown as T;
   }
 
-  const body = await response.json();
+  let body: any;
+  try {
+    body = await response.json();
+  } catch {
+    // Non-JSON response (HTML error page, etc.)
+    const text = await response.text().catch(() => '');
+    const snippet = text.substring(0, 200);
+    console.error(`[API] ${options.method || 'GET'} ${url} → ${response.status}: non-JSON response (${snippet}...)`);
+    throw new Error(`Server error (HTTP ${response.status})`);
+  }
+
   if (!response.ok) {
     const errorMessage = body.message || body.error || `Request failed (HTTP ${response.status})`;
     console.error(`[API] ${options.method || 'GET'} ${url} → ${response.status}: ${errorMessage}`);

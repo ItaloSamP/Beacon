@@ -82,6 +82,12 @@ class AuthService:
             "refresh_token": refresh_token,
         }
 
+    async def get_user(self, user_id: str) -> User:
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            raise UnauthorizedException("User not found", error_code="invalid_token")
+        return user
+
     async def refresh_token(self, refresh_token: str) -> dict:
         if not refresh_token:
             raise UnauthorizedException("Invalid token", error_code="invalid_token")

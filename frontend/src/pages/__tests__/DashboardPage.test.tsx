@@ -269,13 +269,13 @@ describe('DashboardPage', () => {
 
     it('should show empty anomaly feed when no anomalies', async () => {
       server.use(
-        http.get('http://localhost:8000/api/v1/anomalies/recent', () => {
+        http.get('/api/v1/anomalies/recent', () => {
           return HttpResponse.json(
             { data: [], meta: { total: 0, limit: 10 }, error: null },
             { status: 200 }
           );
         }),
-        http.get('http://localhost:8000/api/v1/pipeline-runs/recent', () => {
+        http.get('/api/v1/pipeline-runs/recent', () => {
           return HttpResponse.json(
             { data: [], meta: { total: 0, limit: 10 }, error: null },
             { status: 200 }
@@ -295,13 +295,13 @@ describe('DashboardPage', () => {
 
     it('should show empty jobs feed when no pipeline runs', async () => {
       server.use(
-        http.get('http://localhost:8000/api/v1/anomalies/recent', () => {
+        http.get('/api/v1/anomalies/recent', () => {
           return HttpResponse.json(
             { data: [], meta: { total: 0, limit: 10 }, error: null },
             { status: 200 }
           );
         }),
-        http.get('http://localhost:8000/api/v1/pipeline-runs/recent', () => {
+        http.get('/api/v1/pipeline-runs/recent', () => {
           return HttpResponse.json(
             { data: [], meta: { total: 0, limit: 10 }, error: null },
             { status: 200 }
@@ -321,7 +321,7 @@ describe('DashboardPage', () => {
 
     it('should show error state on anomaly API failure', async () => {
       server.use(
-        http.get('http://localhost:8000/api/v1/anomalies/recent', () => {
+        http.get('/api/v1/anomalies/recent', () => {
           return HttpResponse.json(
             { data: null, error: 'server_error', message: 'Failed to load anomalies' },
             { status: 500 }
@@ -339,7 +339,7 @@ describe('DashboardPage', () => {
 
     it('should show error state on pipeline runs API failure', async () => {
       server.use(
-        http.get('http://localhost:8000/api/v1/pipeline-runs/recent', () => {
+        http.get('/api/v1/pipeline-runs/recent', () => {
           return HttpResponse.json(
             { data: null, error: 'server_error', message: 'Failed to load jobs' },
             { status: 500 }

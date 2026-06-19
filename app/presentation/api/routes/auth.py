@@ -37,6 +37,22 @@ async def refresh(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
     return RefreshResponse(data=result, error=None)
 
 
+@router.get("/me")
+async def me(user: dict = Depends(require_auth), db: AsyncSession = Depends(get_db)):
+    service = AuthService(UserRepository(db))
+    user_obj = await service.get_user(user["user_id"])
+    return {
+        "data": {
+            "user": {
+                "id": str(user_obj.id),
+                "email": user_obj.email,
+                "name": user_obj.name,
+            }
+        },
+        "error": None,
+    }
+
+
 @router.post("/logout", status_code=204)
 async def logout(user: dict = Depends(require_auth)):
     return None

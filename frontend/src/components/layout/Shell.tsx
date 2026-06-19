@@ -6,12 +6,12 @@ import { Header } from './Header';
 import { PageHeaderContext, type PageHeaderData } from './PageHeaderContext';
 
 export function Shell() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, isVerifying, user } = useAuth();
   const [header, setHeader] = useState<PageHeaderData>({ title: 'Beacon' });
 
   const ctxValue = useMemo(() => ({ header, setHeader }), [header]);
 
-  if (isLoading) {
+  if (isVerifying || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div
