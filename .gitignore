@@ -33,6 +33,10 @@ htmlcov/
 # Frontend coverage (generated)
 frontend/coverage/
 
+# Playwright artifacts (generated)
+frontend/playwright-report/
+frontend/test-results/
+
 # Alembic
 alembic/versions/*.pyc
 
