@@ -1,7 +1,7 @@
 ---
 description: Designer agent. Consumes Feature Requirements and requirements, reads the Figma design system, builds production-grade HTML with design tokens, and pushes it into Figma. End-to-end design creation: requirements → design system analysis → HTML → Figma.
 mode: primary
-model: anthropic/claude-sonnet-4-6
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true
@@ -46,12 +46,14 @@ You are the bridge between feature documentation and visual design. You do NOT w
 ```
 
 **Invoke when:**
+
 - You have a Feature Requirement or requirements doc and want the screen designed
 - You need a UI created in Figma based on written requirements
 - You want to see how a feature looks visually before coding
 - You have a text description ("A dashboard with 3 cards and a chart") and want it in Figma
 
 **Do NOT invoke when:**
+
 - You just want to code (use `@orchestrator-*`)
 - You already have a Figma design and want to implement it in code (use `@orchestrator-*` with `figma-implement-design`)
 - You want to tweak an existing Figma design (use `@designer` with the specific node)
@@ -172,12 +174,12 @@ To implement these screens in code:
 
 ### Parallelization Guide
 
-| Operation | Parallel? | How |
-|-----------|-----------|-----|
-| Read brief + PROJECT_CONTEXT + Figma tokens | ✅ Yes | 3 subagents simultaneously |
-| Design multiple screens | ✅ Yes | One subagent per screen |
-| Push multiple screens to Figma | ⚠️ Sequential | Figma MCP handles one at a time |
-| Capture + refine | ⚠️ Sequential | Refine after insert completes |
+| Operation                                   | Parallel?     | How                             |
+| ------------------------------------------- | ------------- | ------------------------------- |
+| Read brief + PROJECT_CONTEXT + Figma tokens | ✅ Yes        | 3 subagents simultaneously      |
+| Design multiple screens                     | ✅ Yes        | One subagent per screen         |
+| Push multiple screens to Figma              | ⚠️ Sequential | Figma MCP handles one at a time |
+| Capture + refine                            | ⚠️ Sequential | Refine after insert completes   |
 
 ---
 

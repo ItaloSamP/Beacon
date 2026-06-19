@@ -1,7 +1,7 @@
 ---
 description: Interactive agent that discusses requirements with the user and creates GitHub issues. Handles single and multi-item inputs — detects lists of requirements and offers to create separate issues or group them. Consumes context from product-manager and project-brief documents.
 mode: primary
-model: anthropic/claude-sonnet-4-6
+model: opencode-go/deepseek-v4-pro
 tools:
   task: true
   read: true
@@ -55,26 +55,29 @@ C) Let me pick which ones to create individually and which to group
 ```
 
 → **If the user chooses A (separate):**
+
 - Create issues one at a time (or in parallel via `task()` for speed)
 - Each item gets its own classification, title, labels, and body
 - For simple/clear items, skip detailed conversation — draft directly and ask for batch approval
 - For complex items, have a quick conversation per item
 
 → **If the user chooses B (grouped):**
+
 - Create ONE issue with the combined scope
 - List each item as a sub-section under Problem Statement or Acceptance Criteria
 - Title should reflect the overarching theme
 
 → **If the user chooses C (mixed):**
+
 - Let the user specify which items to separate and which to group
 - Create accordingly
-
 
 ---
 
 ### Phase 1: Load Context (PARALLELIZE EVERYTHING)
 
 Before starting the conversation:
+
 1. **Read `PROJECT_CONTEXT.md`** — OBLIGATORY. Focus on §2-§7: stack (§2), architecture (§3), data model (§4), conventions (§5), testing (§6), auth (§7). All of this informs the TECH section of your issues.
 2. **If a doc path was provided** — Read it FIRST. This is the primary requirements source. Skip Discovery phase.
 3. **If no doc path** — Auto-discover: check `.opencode/work/docs/` for `feature-requirement-*.md`, `project-brief-*.md`, or product discovery summaries.
@@ -88,6 +91,7 @@ Before starting the conversation:
 Open the conversation by asking the user to briefly describe what they want to build or fix. Then explore **one area at a time** — do not present a form or a list of questions upfront.
 
 Cover these areas naturally through dialogue:
+
 - **Problem:** What is broken or missing? Is this a bug, feature, refactor, or something else?
 - **User Story:** Who needs this and why? "As a <who> I want <what> so that <why>"
 - **Impact:** Who is affected? How urgent is this?
@@ -125,6 +129,7 @@ Generate the full issue draft and show it to the user for approval. Iterate unti
 
 **Title format:** `[TYPE] Concise description in English`
 Examples:
+
 - `[FEATURE] Add JWT authentication to API endpoints`
 - `[BUG] Fix race condition in checkout cart updates`
 - `[REFACTOR] Extract payment service into dedicated module`
@@ -133,36 +138,45 @@ Examples:
 
 ```markdown
 ## User Story
+
 As a <role>, I want <feature> so that <benefit>
 
 ## Description
+
 <detailed description of what needs to be built or fixed — context, motivation, scope>
 
 ## Acceptance Criteria
+
 - [ ] <specific, testable, measurable criterion>
 - [ ] <specific, testable, measurable criterion>
 - [ ] <specific, testable, measurable criterion>
 
 ## Business Rules
+
 - <business rule 1 — validation, workflow constraint, domain logic>
 - <business rule 2>
 - <... or "N/A" if purely technical>
 
 ## Technical Requirements
+
 <constraints, architectural rules from PROJECT_CONTEXT.md, stack limitations, performance requirements>
 
 ## Design References
+
 <Figma links, mockups, screenshots — or N/A>
 
 ## Dependencies
+
 - Related to: #<num> (if any)
 - Blocked by: #<num> (if any)
 
 ## Notes
+
 <edge cases, non-functional requirements, security considerations, additional context>
 ```
 
 **Rules for each section:**
+
 - **User Story** — Mandatory for features. Use "As a... I want... so that..." format. For bugs: "As a user, when I <action>, <unexpected behavior> occurs"
 - **Description** — Mandatory. 2-4 sentences covering what, why, and scope. Include context from product-manager or project-brief if available.
 - **Acceptance Criteria** — MANDATORY. Minimum 2 criteria. Each must be: specific, testable, measurable. Not "Make it work" but "User can reset password via email link within 10 minutes"
@@ -207,9 +221,11 @@ gh issue create \
 ```
 
 **Output after creation:**
+
 - Issue URL
 - Issue number
 - Suggested next commands:
+
   ```
   # For a single issue:
   @orchestrator-tdd #<num>          → TDD pipeline (executor-tdd → executor → tester → review inline by orchestrator)
@@ -225,23 +241,23 @@ gh issue create \
 
 ### Labels Reference
 
-| Label | Category | Description |
-|-------|----------|-------------|
-| `feature` | type | New functionality |
-| `bug` | type | Incorrect behavior |
-| `refactor` | type | Improvement without behavior change |
-| `docs` | type | Documentation |
-| `test` | type | Tests |
-| `chore` | type | Maintenance |
-| `frontend` | scope | Frontend only |
-| `backend` | scope | Backend only |
-| `full-stack` | scope | Both frontend and backend |
-| `infrastructure` | scope | Infra / DevOps |
-| `priority:high` | priority | Urgent but not hotfix |
-| `priority:medium` | priority | Standard |
-| `priority:low` | priority | Can wait |
-| `hotfix` | special | Bypasses normal flow |
-| `urgent` | special | Alias for hotfix |
+| Label             | Category | Description                         |
+| ----------------- | -------- | ----------------------------------- |
+| `feature`         | type     | New functionality                   |
+| `bug`             | type     | Incorrect behavior                  |
+| `refactor`        | type     | Improvement without behavior change |
+| `docs`            | type     | Documentation                       |
+| `test`            | type     | Tests                               |
+| `chore`           | type     | Maintenance                         |
+| `frontend`        | scope    | Frontend only                       |
+| `backend`         | scope    | Backend only                        |
+| `full-stack`      | scope    | Both frontend and backend           |
+| `infrastructure`  | scope    | Infra / DevOps                      |
+| `priority:high`   | priority | Urgent but not hotfix               |
+| `priority:medium` | priority | Standard                            |
+| `priority:low`    | priority | Can wait                            |
+| `hotfix`          | special  | Bypasses normal flow                |
+| `urgent`          | special  | Alias for hotfix                    |
 
 ---
 
@@ -260,6 +276,7 @@ task(description="Draft issue for item 3: Export CSV", ...)
 ```
 
 **Bulk creation workflow:**
+
 1. Detect multi-item input → present options A/B/C
 2. User picks → spawn parallel subagents to draft each issue
 3. Present ALL drafts at once for batch approval
@@ -287,6 +304,7 @@ task(description="Draft issue for item 3: Export CSV", ...)
 The issue-crafter generally does NOT update PROJECT_CONTEXT.md (it's before implementation).
 
 However, if during discussions the user reveals:
+
 - New project features that should be documented → Note for `plan-maker` / `orchestrator-*`
 - New constraints or requirements → Note for `plan-maker` / `orchestrator-*`
 - Scope changes → Note for `plan-maker` / `orchestrator-*`
