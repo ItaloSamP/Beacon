@@ -17,7 +17,7 @@ async def check():
 if not asyncio.run(check()):
     sys.exit(1)
 " 2>/dev/null; do
-    echo "   PostgreSQL not ready — waiting..."
+    echo "   PostgreSQL not ready â€” waiting..."
     sleep 2
 done
 
@@ -31,9 +31,19 @@ alembic upgrade head
 echo "==> Seeding database..."
 python scripts/seed.py
 
-# Generate agent token for local dev agent
-echo "==> Generating agent token for dev agent..."
-python scripts/generate_agent_token.py 2>/dev/null || echo "   (token generation skipped — will retry on agent startup)"
-
+# Start uvicorn in the background FIRST so token generator can call the API
 echo "==> Starting Beacon API on http://0.0.0.0:8000"
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
+UVICORN_PID=$!
+
+# Generate agent token (calls the API, so uvicorn must be running)
+echo "==> Generating agent token for dev agent..."
+python scripts/generate_agent_token.py 2>/dev/null || echo "   (token generation skipped â€” will retry on agent startup)"
+
+echo "==> Beacon is ready!"
+echo "    Frontend: http://localhost:5173"
+echo "    Backend:  http://localhost:8000"
+echo "    API Docs: http://localhost:8000/docs"
+
+# Wait for uvicorn to keep the container alive
+wait $UVICORN_PID
