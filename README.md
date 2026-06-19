@@ -47,8 +47,8 @@ Setup in 5 minutes, zero validation queries required.
 | Email | SendGrid (HTML alert templates) |
 | Testing | pytest + Vitest + Playwright (E2E) |
 | Lint/Type | Ruff + mypy (Python) / ESLint + tsc (TypeScript) |
-| CI/CD | GitHub Actions (backend, frontend, agent) |
-| Infra | Docker Compose (5 services) |
+| CI/CD | GitHub Actions (5 workflows) + Codecov (80% target) |
+| Infra | Docker Compose (5 services) + Docker Build & Push (ghcr.io) |
 
 ---
 
@@ -288,7 +288,8 @@ beacon/
 
 - **Backend:** Pytest with async HTTP client (httpx). Requires PostgreSQL.
 - **Frontend:** Vitest + React Testing Library + MSW for API mocking.
-- **E2E:** Playwright (17 tests, 6 specs — auth, dashboard, pipeline CRUD, pipeline run, anomaly detail, alert rules).
+- **E2E:** Playwright (12/14 tests passing, 6 specs — auth, dashboard, pipeline CRUD, pipeline run, anomaly detail, alert rules). CI auto-issue on failure.
+- **Coverage:** Codecov with 3 flags (backend, frontend, agent), 80% target.
 
 ---
 
