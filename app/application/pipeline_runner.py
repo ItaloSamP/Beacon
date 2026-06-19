@@ -148,7 +148,9 @@ class PipelineRunService:
         failure the dict carries an ``error`` key instead of raising.
         """
         config = datasource.connection_config or {}
-        target_tables: list[str] = (pipeline.config or {}).get("target_tables", [])  # type: ignore[arg-type]
+        raw_config = pipeline.config or {}
+        target_tables_raw = raw_config.get("target_tables", [])
+        target_tables: list[str] = target_tables_raw if isinstance(target_tables_raw, list) else []
         pipeline_type = pipeline.type.value if hasattr(pipeline.type, "value") else str(pipeline.type)
 
         return await self.profiler.profile(
