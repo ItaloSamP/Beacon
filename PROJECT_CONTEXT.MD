@@ -1,8 +1,8 @@
 # Project Context — Beacon
 
-> **Last Updated:** 2026-06-11T18:00:00Z | **Maintained By:** AI Agent Team
+> **Last Updated:** 2026-06-19T18:00:00Z | **Maintained By:** AI Agent Team
 > **Architecture:** Hybrid (Agent + Cloud Monolith)
-> **Current Sprint:** Sprint 2 (Confiabilidade & Regras de Alerta) — Planning | Sprint 1 completo | Issue #4 (Design System) completo | Issue #23-30 (CI + E2E) completo
+> **Current Sprint:** Sprint 2 (Confiabilidade & Regras de Alerta) — Implementação avançada | Sprint 1 completo | Issue #4 (Design System) completo | Issue #23-30 (CI + E2E) completo | Issue #35 (Pipeline Runner + AlertRules + Codecov + Docker) completo
 
 ---
 
@@ -33,10 +33,20 @@ Diferente de ferramentas de visualização (Metabase) ou monitoramento de infra 
 - E2E tests com Playwright (6 specs, 17 tests) — auth, dashboard, pipeline CRUD, pipeline run, anomaly detail
 - Docker Compose para ambiente dev completo (PostgreSQL, Redis, Backend, Frontend, Agent)
 
-**Key Features (Sprint 2 — Em planejamento):**
-- AlertRules CRUD (métricas estruturadas: metric, operator, threshold) + frontend inline
-- AlertDispatcher com regras (só dispara se threshold atingido)
-- 7 security fixes (user isolation, bare except, last_used_at, agent-token restriction)
+**Key Features (Sprint 2 — Implementado):**
+- ✅ AlertRules CRUD completo (model com campos estruturados: metric, operator, threshold; + service, repo, rotas REST sob `/pipelines/{id}/rules`)
+- ✅ PipelineRunner real (antes era placeholder) — profiling cloud + detecção de anomalias + dispatch de alertas
+- ✅ AlertDispatcher com threshold enforcement (avalia AlertRules: só dispara alerta se threshold da regra for atingido)
+- ✅ CloudProfiler + CloudAnomalyDetector em `app/application/` (wrappers cloud para profiling e detecção do agente)
+- ✅ SendGrid integração real (substitui stub EmailNotifier)
+- ✅ /auth/me endpoint (verificação de sessão)
+- ✅ /datasources/health endpoint (contagens: healthy, warning, error, offline)
+- ✅ Global JSON error handler (3 exception handlers: AppException, RequestValidationError, Exception)
+- ✅ 7 security fixes (user isolation via ownership chain, bare except removals, last_used_at tracking, agent-token restriction, schema validation)
+- ✅ Codecov integration (3 flags: backend, frontend, agent — target 80%)
+- ✅ Docker Build & Push CI (ghcr.io, 3 imagens: backend, frontend, agent)
+- ✅ E2E CI pipeline (Playwright, 12/14 tests pass, auto-issue on failure)
+- ✅ 5 GitHub Actions workflows (backend, frontend, agent, docker-build, e2e)
 
 **Key Features (futuro):**
 - Suporte a MySQL, BigQuery, Google Sheets
@@ -74,7 +84,7 @@ Diferente de ferramentas de visualização (Metabase) ou monitoramento de infra 
 | Linter/Formatter | Ruff (Python) + ESLint (TypeScript) |
 | Type Checker | mypy (Python) + TypeScript strict mode |
 | Testing | pytest + pytest-asyncio + httpx (backend), Vitest + React Testing Library + MSW (frontend), Playwright (E2E) |
-| CI/CD | GitHub Actions (backend, frontend, agent workflows) |
+| CI/CD | GitHub Actions (backend, frontend, agent, docker-build, e2e) + Codecov |
 | Containerization | Docker Compose (5 services: postgres, redis, backend, frontend, agent) |
 
 ### Dev Commands
@@ -98,11 +108,12 @@ Diferente de ferramentas de visualização (Metabase) ou monitoramento de infra 
 |---------|------------|
 | `npm run dev` | Start dev server (frontend) |
 | `npx vitest` | Run unit tests |
-| `npx playwright test` | Run E2E tests |
 | `npx vitest --coverage` | Run tests with coverage |
 | `npm run lint` | Lint TypeScript code |
 | `npx tsc --noEmit` | Type-check TypeScript |
 | `npm run build` | Build for production |
+| `npx playwright test` | Run E2E tests (requires backend running) |
+| `npx playwright test --ui` | Run E2E tests with Playwright UI |
 
 **Test DB Management:**
 
@@ -173,9 +184,12 @@ app/
 │   ├── agent_service.py
 │   ├── datasource_service.py
 │   ├── pipeline_service.py
-│   ├── pipeline_runner.py     # Pipeline execution orchestrator
+│   ├── pipeline_runner.py     # Pipeline execution orchestrator (REAL — CloudProfiler + AnomalyDetector + AlertDispatcher)
+│   ├── profiling.py           # CloudProfiler — wrapper para agent/profiling/runner.py (decrypt config, chama profilers)
+│   ├── detection.py           # CloudAnomalyDetector — wrapper para agent/detection.py (z-score baselines via métricas históricas)
+│   ├── alert_rule_service.py  # AlertRule CRUD com verificação de ownership (pipeline → datasource → agent → user)
 │   ├── anomaly_service.py
-│   └── alert_dispatcher.py
+│   └── alert_dispatcher.py    # Avalia AlertRules (threshold enforcement), dispatch via EmailNotifier
 ├── infrastructure/            # Database, connectors, external services
 │   ├── database.py            # Async engine, session factory, get_db dependency
 │   ├── crypto.py              # Fernet encrypt/decrypt for connection_config
@@ -194,7 +208,8 @@ app/
 │       ├── pipeline_repo.py
 │       ├── pipeline_run_repo.py
 │       ├── anomaly_repo.py
-│       └── alert_repo.py
+│       ├── alert_repo.py
+│       └── alert_rule_repo.py
 ├── presentation/              # Controllers, routes, HTTP handlers
 │   ├── api/
 │   │   ├── router.py          # Central router registration
@@ -204,6 +219,7 @@ app/
 │   │   │   ├── pipelines.py
 │   │   │   ├── pipeline_runs.py
 │   │   │   ├── anomalies.py
+│   │   │   ├── alert_rules.py    # AlertRules CRUD sob /pipelines/{id}/rules
 │   │   │   ├── api_keys.py
 │   │   │   ├── auth.py        # Login, register, refresh, forgot/reset password
 │   │   │   └── health.py
@@ -296,9 +312,9 @@ frontend/
 | **PipelineRun** | `id`, `pipeline_id`, `status` (success/warning/error), `metrics_json`, `started_at`, `finished_at` | belongs to Pipeline, has many Anomaly |
 | **Anomaly** | `id`, `pipeline_run_id`, `severity` (low/medium/high/critical), `type`, `description`, `deviation_details` (JSONB), `detected_at`, `resolved_at` | belongs to PipelineRun, has many Alert |
 | **Alert** | `id`, `anomaly_id`, `channel` (email/slack), `sent_at`, `status` (sent/failed), `error_message` | belongs to Anomaly |
-| **AlertRule** | `id`, `pipeline_id`, `metric` (z_score/null_pct/volume_delta_pct), `operator` (gt/lt/gte/lte/eq), `threshold` (float), `channels` (JSONB array), `enabled` | belongs to Pipeline |
+| **AlertRule** | `id`, `pipeline_id`, `metric` (z_score/null_pct/volume_delta_pct), `operator` (gt/lt/gte/lte/eq), `threshold` (float), `channels` (JSONB array), `enabled`, `created_at`, `updated_at` | belongs to Pipeline |
 
-> **Nota sobre AlertRule:** O modelo atual em `models.py` ainda usa o campo legado `condition` (string). O Sprint 2 planeja refatorar para campos estruturados (`metric`, `operator`, `threshold`) via migration Alembic. Atualmente AlertRule não tem repositório, serviço ou rotas implementadas — o AlertDispatcher ignora as regras e toda anomalia gera alerta.
+> **Nota sobre AlertRule:** O modelo foi refatorado no Sprint 2 para usar campos estruturados (`metric`, `operator`, `threshold`) em vez do legado `condition` (string). Migration Alembic aplicada. AlertRule tem repositório, serviço e rotas REST completos implementados. AlertDispatcher avalia as regras e só dispara alerta se threshold da regra for atingido.
 
 > **Agente local:** O agente mantém armazenamento local em SQLite (`beacon_agent.db`) com tabelas: `profiles` (histórico de profiling), `baselines` (média, stddev, n por métrica), `offline_queue` (alertas não sincronizados com o cloud).
 
@@ -1352,8 +1368,6 @@ The 5 fix categories (synthetic CSS tokens, password toggle aria-label, SearchIn
 
 **Source:** Issue #4 — Tester fix verification Run 11 (2026-05-21)
 
-*Created by @project-setup on 2026-05-12*
-
 #### 2026-06-11 — Infrastructure: Agent CI workflow pattern — no PostgreSQL service container needed
 
 **Context:** The agent's GitHub Actions CI workflow (`agent-ci.yml`) runs ruff, mypy, and pytest on `agent/**` code. Unlike the backend CI, agent tests use mocks (`respx`, `MagicMock`, `AsyncMock`) exclusively.
@@ -1446,3 +1460,20 @@ baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
 **Solution:** Replace `page.waitForTimeout(2000)` after `POST /pipelines/{id}/run` with `page.waitForResponse(res => res.url().includes('/run') && res.status() === 200)`. Replace `page.waitForTimeout(1000)` after toggle click with `expect(toggleLocator).toBeVisible()`. Hard waits should only be used as last-resort debugging aids, never in committed test code.
 
 **Source:** Issue #23-30 — Code review (2026-06-11)
+
+---
+
+## 11. Context Files
+
+> Specialized context documents. Load the relevant file for each task type.
+
+| File | Purpose | When to read |
+|------|---------|--------------|
+| `DESIGN.md` | Design tokens, tipografia, paleta de cores, componentes | Tarefas frontend/UI |
+| `API.md` | Endpoints REST, contratos, error codes, autenticação | Integração, testes de contrato |
+| `DATA_MODEL.md` | Schema DB completo, entidades, relacionamentos, índices | Tarefas de banco, migrations |
+| `DECISIONS.md` | ADRs, decisões arquiteturais, trade-offs | Planejamento, review de arquitetura |
+| `WORKFLOWS.md` | CI/CD, branching strategy, PR process, ambientes | Commit, hotfix, deploy |
+| `CHEATSHEET.md` | Quick reference de agentes, comandos e fluxos | Onboarding, consulta rápida |
+
+*Created by @project-setup on 2026-05-12*
