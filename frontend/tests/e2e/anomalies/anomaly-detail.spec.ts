@@ -151,16 +151,9 @@ test.describe('Anomaly Detail', () => {
     await page.goto('/anomalies/invalid-id-99999');
     await page.waitForLoadState('networkidle');
 
-    // Should show empty state or error
+    // Wait for either the empty state or error panel to appear
     const emptyState = page.locator('text=nao encontrada');
     const errorPanel = page.locator('text=Failed to load');
-
-    const hasEmptyOrError = await Promise.race([
-      emptyState.isVisible().then((v) => (v ? 'empty' : null)),
-      errorPanel.isVisible().then((v) => (v ? 'error' : null)),
-      page.waitForTimeout(5000).then(() => 'timeout'),
-    ]);
-
-    expect(['empty', 'error']).toContain(hasEmptyOrError);
+    await expect(emptyState.or(errorPanel).first()).toBeVisible({ timeout: 10000 });
   });
 });
