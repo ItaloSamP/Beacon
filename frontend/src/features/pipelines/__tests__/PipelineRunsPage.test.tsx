@@ -212,7 +212,7 @@ describe('PipelineRunsPage', () => {
     it('should show empty state when no runs', async () => {
       server.use(
         http.get(
-          'http://localhost:8000/api/v1/pipelines/pipe-uuid-001/runs',
+          '/api/v1/pipelines/pipe-uuid-001/runs',
           () => {
             return HttpResponse.json(
               {
@@ -239,7 +239,7 @@ describe('PipelineRunsPage', () => {
     it('should show error state on API failure', async () => {
       server.use(
         http.get(
-          'http://localhost:8000/api/v1/pipelines/pipe-uuid-001/runs',
+          '/api/v1/pipelines/pipe-uuid-001/runs',
           () => {
             return HttpResponse.json(
               {
