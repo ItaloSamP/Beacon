@@ -1543,6 +1543,142 @@ export const agentTokenHandlers = [
 ];
 
 // ============================================================
+// AlertRule handlers
+// ============================================================
+
+const mockAlertRules: Array<{
+  id: string;
+  pipeline_id: string;
+  metric: string;
+  operator: string;
+  threshold: number;
+  channels: string[];
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}> = [
+  {
+    id: 'rule-uuid-001',
+    pipeline_id: 'pipe-uuid-001',
+    metric: 'z_score',
+    operator: 'gt',
+    threshold: 3.0,
+    channels: ['email'],
+    enabled: true,
+    created_at: '2026-05-14T10:00:00Z',
+    updated_at: '2026-05-14T10:00:00Z',
+  },
+  {
+    id: 'rule-uuid-002',
+    pipeline_id: 'pipe-uuid-001',
+    metric: 'null_pct',
+    operator: 'gte',
+    threshold: 5.5,
+    channels: ['email', 'slack'],
+    enabled: true,
+    created_at: '2026-05-14T10:01:00Z',
+    updated_at: '2026-05-14T10:01:00Z',
+  },
+  {
+    id: 'rule-uuid-003',
+    pipeline_id: 'pipe-uuid-001',
+    metric: 'volume_delta_pct',
+    operator: 'lt',
+    threshold: 10.0,
+    channels: ['email'],
+    enabled: false,
+    created_at: '2026-05-14T10:02:00Z',
+    updated_at: '2026-05-14T10:02:00Z',
+  },
+];
+
+export const alertRuleHandlers = [
+  // GET /api/v1/pipelines/:pipelineId/rules
+  http.get(`${API_BASE}/pipelines/:pipelineId/rules`, ({ params }) => {
+    const { pipelineId } = params;
+    const rules = mockAlertRules.filter((r) => r.pipeline_id === pipelineId);
+
+    return HttpResponse.json(
+      { data: rules, error: null },
+      { status: 200 }
+    );
+  }),
+
+  // POST /api/v1/pipelines/:pipelineId/rules
+  http.post(`${API_BASE}/pipelines/:pipelineId/rules`, async ({ params, request }) => {
+    const { pipelineId } = params;
+    const body = (await request.json()) as Record<string, unknown>;
+
+    if (!body.metric || !body.operator || body.threshold == null) {
+      return HttpResponse.json(
+        { data: null, error: 'validation_error', message: 'metric, operator, and threshold are required' },
+        { status: 422 }
+      );
+    }
+
+    const newRule = {
+      id: `rule-uuid-${Date.now()}`,
+      pipeline_id: pipelineId as string,
+      metric: body.metric as string,
+      operator: body.operator as string,
+      threshold: body.threshold as number,
+      channels: (body.channels as string[]) || ['email'],
+      enabled: body.enabled !== false,
+      created_at: '2026-05-14T12:00:00Z',
+      updated_at: '2026-05-14T12:00:00Z',
+    };
+
+    mockAlertRules.push(newRule);
+
+    return HttpResponse.json(
+      { data: newRule, error: null },
+      { status: 201 }
+    );
+  }),
+
+  // PUT /api/v1/pipelines/:pipelineId/rules/:ruleId
+  http.put(`${API_BASE}/pipelines/:pipelineId/rules/:ruleId`, async ({ params, request }) => {
+    const { ruleId } = params;
+    const body = (await request.json()) as Record<string, unknown>;
+    const index = mockAlertRules.findIndex((r) => r.id === ruleId);
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Rule not found' },
+        { status: 404 }
+      );
+    }
+
+    mockAlertRules[index] = {
+      ...mockAlertRules[index],
+      ...body,
+      updated_at: '2026-05-14T13:00:00Z',
+    };
+
+    return HttpResponse.json(
+      { data: mockAlertRules[index], error: null },
+      { status: 200 }
+    );
+  }),
+
+  // DELETE /api/v1/pipelines/:pipelineId/rules/:ruleId
+  http.delete(`${API_BASE}/pipelines/:pipelineId/rules/:ruleId`, ({ params }) => {
+    const { ruleId } = params;
+    const index = mockAlertRules.findIndex((r) => r.id === ruleId);
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { data: null, error: 'not_found', message: 'Rule not found' },
+        { status: 404 }
+      );
+    }
+
+    mockAlertRules.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+];
+
+// ============================================================
 // Combine all handlers
 // ============================================================
 
@@ -1558,4 +1694,5 @@ export const handlers = [
   ...pipelineRunHandlers,
   ...agentTokenHandlers,
   ...dashboardStatsHandlers,
+  ...alertRuleHandlers,
 ];
