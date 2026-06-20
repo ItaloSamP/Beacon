@@ -12,6 +12,7 @@ import type { Pipeline, PipelineType } from '../../types/pipeline';
 import type { DataSource } from '../../types/datasource';
 import { useSetPageHeader } from '../../components/layout/PageHeaderContext';
 import type { ApiResponse, PaginatedResponse } from '../../types/api';
+import { AlertRulesSection } from './AlertRulesSection';
 
 const TYPE_OPTIONS = [
   { value: 'volume', label: 'Volume' },
@@ -188,6 +189,7 @@ export function PipelineForm() {
             checked={enabled}
             onChange={setEnabled}
           />
+          <AlertRulesSection pipelineId={isEdit ? id : undefined} isEditing={isEdit} />
           {mutation.isError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               {(mutation.error as Error)?.message || 'An error occurred'}
