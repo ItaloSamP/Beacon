@@ -1,0 +1,37 @@
+# Beacon — Render Blueprint
+# =============================================================================
+# Deploys backend as a Web Service and frontend as a Static Site on Render.
+# Agent is NOT deployed — it's a pip package installed by end users locally.
+# See DEPLOY.md for full deployment guide.
+# =============================================================================
+
+services:
+  - type: web
+    name: beacon-backend
+    runtime: python
+    buildCommand: pip install -e ".[dev]" && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: FERNET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: '["https://beacon-frontend.onrender.com"]'
+      - key: PYTHON_VERSION
+        value: "3.13.0"
+
+  - type: static
+    name: beacon-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://beacon-backend.onrender.com

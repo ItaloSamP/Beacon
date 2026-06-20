@@ -1,3 +1,5 @@
+import type { AlertRule, AlertRuleCreate, AlertRuleUpdate } from '../types/alert_rule';
+
 const API_BASE = '/api/v1';
 
 export class SessionExpiredError extends Error {
@@ -178,4 +180,27 @@ export async function getPipelineRunsRecent(limit?: number): Promise<PipelineRun
     : '/pipeline-runs/recent';
   const response = await api.get<ApiEnvelope<PipelineRunSummary[]>>(endpoint);
   return response.data;
+}
+
+// ============================================================
+// AlertRule endpoint functions
+// ============================================================
+
+export async function getRules(pipelineId: string): Promise<AlertRule[]> {
+  const res = await api.get<ApiEnvelope<AlertRule[]>>(`/pipelines/${pipelineId}/rules`);
+  return res.data ?? [];
+}
+
+export async function createRule(pipelineId: string, data: AlertRuleCreate): Promise<AlertRule> {
+  const res = await api.post<ApiEnvelope<AlertRule>>(`/pipelines/${pipelineId}/rules`, data);
+  return res.data!;
+}
+
+export async function updateRule(pipelineId: string, ruleId: string, data: AlertRuleUpdate): Promise<AlertRule> {
+  const res = await api.put<ApiEnvelope<AlertRule>>(`/pipelines/${pipelineId}/rules/${ruleId}`, data);
+  return res.data!;
+}
+
+export async function deleteRule(pipelineId: string, ruleId: string): Promise<void> {
+  await api.delete(`/pipelines/${pipelineId}/rules/${ruleId}`);
 }

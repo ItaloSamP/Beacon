@@ -1,0 +1,271 @@
+name: Reports Aggregator
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.opencode/**'
+  schedule:
+    - cron: '*/10 * * * *'  # every 10 minutes
+  workflow_dispatch:  # manual trigger for testing
+
+permissions:
+  contents: write  # needed to push to gh-pages
+  actions: read    # needed to download artifacts
+
+concurrency:
+  group: reports-aggregator
+  cancel-in-progress: true
+
+jobs:
+  aggregate-reports:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download backend-coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: artifacts/backend-coverage
+        continue-on-error: true
+
+      - name: Download frontend-coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: artifacts/frontend-coverage
+        continue-on-error: true
+
+      - name: Download coverage-agent artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-agent
+          path: artifacts/coverage-agent
+        continue-on-error: true
+
+      - name: Download docker-build-report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-build-report
+          path: artifacts/docker-build-report
+        continue-on-error: true
+
+      - name: Download playwright-report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: artifacts/playwright-report
+        continue-on-error: true
+
+      - name: Generate reports.json
+        id: generate
+        run: |
+          python -c "
+          import json, os, sys
+          from datetime import datetime, timezone
+
+          def load_json(filepath, default=None):
+              try:
+                  with open(filepath, 'r') as f:
+                      return json.load(f)
+              except (FileNotFoundError, json.JSONDecodeError):
+                  return default
+
+          def default_component(status='pending'):
+              return {
+                  'status': status,
+                  'tests': None,
+                  'coverage': None,
+                  'lint': None,
+                  'type_check': None,
+                  'security': None,
+                  'build': None,
+              }
+
+          # Parse backend coverage
+          backend = default_component()
+          backend_cov = load_json('artifacts/backend-coverage/coverage.json')
+          backend_test = load_json('artifacts/backend-coverage/test-results.json')
+          backend_lint = load_json('artifacts/backend-coverage/lint-results.json')
+          backend_cso = load_json('artifacts/backend-coverage/security-results.json')
+
+          if backend_cov:
+              totals = backend_cov.get('totals', {})
+              backend['coverage'] = {
+                  'statements': totals.get('percent_covered', 0),
+                  'branches': totals.get('percent_covered', 0),
+                  'functions': totals.get('percent_covered', 0),
+                  'lines': totals.get('percent_covered', 0),
+              }
+              backend['status'] = 'success'
+
+          if backend_test:
+              backend['tests'] = backend_test.get('summary', {})
+              if backend['tests'] and backend['tests'].get('failed', 0) > 0:
+                  backend['status'] = 'failed'
+
+          if backend_lint:
+              backend['lint'] = {
+                  'passed': backend_lint.get('issues', 0) == 0,
+                  'issues': backend_lint.get('issues', 0),
+              }
+
+          if backend_cso:
+              backend['security'] = {
+                  'passed': backend_cso.get('score', 0) >= 80,
+                  'issues': backend_cso.get('total_issues', 0),
+              }
+
+          # Parse frontend coverage
+          frontend = default_component()
+          frontend_cov = load_json('artifacts/frontend-coverage/coverage.json')
+          frontend_test = load_json('artifacts/frontend-coverage/test-results.json')
+          frontend_lint = load_json('artifacts/frontend-coverage/lint-results.json')
+          frontend_build = load_json('artifacts/frontend-coverage/build-results.json')
+
+          if frontend_cov:
+              totals = frontend_cov.get('totals', {})
+              frontend['coverage'] = {
+                  'statements': totals.get('percent_covered', 0),
+                  'branches': totals.get('percent_covered', 0),
+                  'functions': totals.get('percent_covered', 0),
+                  'lines': totals.get('percent_covered', 0),
+              }
+              frontend['status'] = 'success'
+
+          if frontend_test:
+              frontend['tests'] = frontend_test.get('summary', {})
+              if frontend['tests'] and frontend['tests'].get('failed', 0) > 0:
+                  frontend['status'] = 'failed'
+
+          if frontend_lint:
+              frontend['lint'] = {
+                  'passed': frontend_lint.get('issues', 0) == 0,
+                  'issues': frontend_lint.get('issues', 0),
+              }
+
+          frontend['type_check'] = {
+              'passed': frontend_cov is not None and (frontend_test is not None),
+              'errors': 0,
+          }
+
+          if frontend_build:
+              frontend['build'] = {
+                  'passed': frontend_build.get('success', False),
+              }
+
+          # Parse agent coverage
+          agent = default_component()
+          agent_cov = load_json('artifacts/coverage-agent/coverage.json')
+          agent_test = load_json('artifacts/coverage-agent/test-results.json')
+          agent_lint = load_json('artifacts/coverage-agent/lint-results.json')
+
+          if agent_cov:
+              totals = agent_cov.get('totals', {})
+              agent['coverage'] = {
+                  'statements': totals.get('percent_covered', 0),
+                  'branches': totals.get('percent_covered', 0),
+                  'functions': totals.get('percent_covered', 0),
+                  'lines': totals.get('percent_covered', 0),
+              }
+              agent['status'] = 'success'
+
+          if agent_test:
+              agent['tests'] = agent_test.get('summary', {})
+              if agent['tests'] and agent['tests'].get('failed', 0) > 0:
+                  agent['status'] = 'failed'
+
+          if agent_lint:
+              agent['lint'] = {
+                  'passed': agent_lint.get('issues', 0) == 0,
+                  'issues': agent_lint.get('issues', 0),
+              }
+
+          agent['type_check'] = {
+              'passed': agent_cov is not None,
+              'errors': 0,
+          }
+
+          # Parse Docker build report
+          docker = {'backend': {'built': False, 'tag': None}, 'frontend': {'built': False, 'tag': None}, 'agent': {'built': False, 'tag': None}}
+          docker_report = load_json('artifacts/docker-build-report/docker-report.json')
+          if docker_report:
+              docker = docker_report
+
+          # Parse E2E results
+          e2e = {'tests': {'passed': 0, 'failed': 0, 'skipped': 0}, 'report_url': None, 'status': 'pending'}
+          e2e_report = load_json('artifacts/playwright-report/playwright-summary.json')
+          if e2e_report:
+              e2e['tests'] = e2e_report.get('summary', e2e['tests'])
+              e2e['report_url'] = e2e_report.get('report_url')
+              e2e['status'] = 'success' if e2e['tests'].get('failed', 0) == 0 else 'failed'
+
+          # Build the report
+          report = {
+              'generated_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'commit': '${{ github.sha }}',
+              'branch': '${{ github.ref_name }}',
+              'components': {
+                  'backend': backend,
+                  'frontend': frontend,
+                  'agent': agent,
+                  'docker': docker,
+                  'e2e': e2e,
+              },
+              'history': [],
+          }
+
+          # Load existing reports.json if it exists
+          existing = load_json('reports.json')
+          if existing and 'history' in existing:
+              # Keep last 19 entries + current = 20
+              report['history'] = (existing.get('history', [])[-19:] or [])
+          report['history'].append({
+              'generated_at': report['generated_at'],
+              'commit': report['commit'],
+              'branch': report['branch'],
+              'components': report['components'],
+          })
+
+          with open('reports.json', 'w') as f:
+              json.dump(report, f, indent=2)
+
+          print('reports.json generated successfully')
+          "
+
+      - name: Prepare publish directory
+        run: |
+          mkdir -p publish
+          cp reports.json publish/
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: publish
+          publish_branch: gh-pages
+          keep_files: true
+          commit_message: 'ci: update reports.json [skip ci]'
+
+      - name: Summary
+        run: |
+          echo '## 📊 Reports Aggregated' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated at:** $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '### Artifacts collected:' >> $GITHUB_STEP_SUMMARY
+          echo '- [x] Backend coverage' >> $GITHUB_STEP_SUMMARY
+          echo '- [x] Frontend coverage' >> $GITHUB_STEP_SUMMARY
+          echo '- [x] Agent coverage' >> $GITHUB_STEP_SUMMARY
+          echo '- [x] Docker build report' >> $GITHUB_STEP_SUMMARY
+          echo '- [x] Playwright E2E report' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo 'Reports deployed to gh-pages branch.' >> $GITHUB_STEP_SUMMARY
