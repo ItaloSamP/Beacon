@@ -1,0 +1,128 @@
+{
+  "generated_at": "2026-06-20T23:59:54Z",
+  "commit": "2c37aedf17b252d8734818e10945bce73996039a",
+  "branch": "main",
+  "components": {
+    "backend": {
+      "status": "pending",
+      "tests": null,
+      "coverage": null,
+      "lint": null,
+      "type_check": null,
+      "security": null,
+      "build": null
+    },
+    "frontend": {
+      "status": "pending",
+      "tests": null,
+      "coverage": null,
+      "lint": null,
+      "type_check": {
+        "passed": false,
+        "errors": 0
+      },
+      "security": null,
+      "build": null
+    },
+    "agent": {
+      "status": "pending",
+      "tests": null,
+      "coverage": null,
+      "lint": null,
+      "type_check": {
+        "passed": false,
+        "errors": 0
+      },
+      "security": null,
+      "build": null
+    },
+    "docker": {
+      "backend": {
+        "built": false,
+        "tag": null
+      },
+      "frontend": {
+        "built": false,
+        "tag": null
+      },
+      "agent": {
+        "built": false,
+        "tag": null
+      }
+    },
+    "e2e": {
+      "tests": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0
+      },
+      "report_url": null,
+      "status": "pending"
+    }
+  },
+  "history": [
+    {
+      "generated_at": "2026-06-20T23:59:54Z",
+      "commit": "2c37aedf17b252d8734818e10945bce73996039a",
+      "branch": "main",
+      "components": {
+        "backend": {
+          "status": "pending",
+          "tests": null,
+          "coverage": null,
+          "lint": null,
+          "type_check": null,
+          "security": null,
+          "build": null
+        },
+        "frontend": {
+          "status": "pending",
+          "tests": null,
+          "coverage": null,
+          "lint": null,
+          "type_check": {
+            "passed": false,
+            "errors": 0
+          },
+          "security": null,
+          "build": null
+        },
+        "agent": {
+          "status": "pending",
+          "tests": null,
+          "coverage": null,
+          "lint": null,
+          "type_check": {
+            "passed": false,
+            "errors": 0
+          },
+          "security": null,
+          "build": null
+        },
+        "docker": {
+          "backend": {
+            "built": false,
+            "tag": null
+          },
+          "frontend": {
+            "built": false,
+            "tag": null
+          },
+          "agent": {
+            "built": false,
+            "tag": null
+          }
+        },
+        "e2e": {
+          "tests": {
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0
+          },
+          "report_url": null,
+          "status": "pending"
+        }
+      }
+    }
+  ]
+}
