@@ -1,6 +1,6 @@
 # Task: issue-26 — Quality Hub HTML Dashboard on GitHub Pages
 
-## Status: READY_TO_COMMIT
+## Status: DONE
 
 ## Metadata
 - **Type:** feature

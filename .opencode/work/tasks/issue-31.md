@@ -1,6 +1,6 @@
 # Task: issue-31 — Documentation Hub (MkDocs Material + auto-generation + GitHub Pages)
 
-## Status: READY_TO_COMMIT
+## Status: DONE
 
 ## Metadata
 - **Type:** docs
