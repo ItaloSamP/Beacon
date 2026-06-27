@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Source files
-PROJECT_CONTEXT_PATH = PROJECT_ROOT / "PROJECT_CONTEXT.md"
+PROJECT_CONTEXT_PATH = PROJECT_ROOT / "PROJECT_CONTEXT.MD"
 WORK_DOCS_DIR = PROJECT_ROOT / ".opencode" / "work" / "docs"
 TASKS_DIR = PROJECT_ROOT / ".opencode" / "work" / "tasks"
 
