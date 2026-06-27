@@ -293,6 +293,23 @@ beacon/
 
 ---
 
+## Roadmap
+
+O Beacon está em evolução ativa. O roadmap pós-MVP está organizado em 4 fases:
+
+| Fase | Objetivo | Duração |
+|------|----------|---------|
+| 🔴 **Fase 1 — Motor** | 5 novos profilers, IQR + CUSUM + sazonalidade | 3-4 semanas |
+| 🟡 **Fase 2 — Onboarding** | Wizard + auto-discovery + Slack + digest | 3-4 semanas |
+| 🟢 **Fase 3 — Segurança** | mTLS + MFA + RBAC + audit log | 4-5 semanas |
+| 🔵 **Fase 4 — Expansão** | MySQL + BigQuery + Sheets + dashboard rico | 4-5 semanas |
+
+📋 **Plano completo:** `.opencode/work/tasks/task-beacon-post-mvp.md`  
+🎨 **Protótipos Figma:** 12 telas publicadas — `uq30Y3KWwjVleDbBJwmlUz`  
+📁 **Protótipos HTML:** 21 telas em `.opencode/work/design-prototypes/`
+
+---
+
 ## Contributing
 
 1. Follow the coding standards in `PROJECT_CONTEXT.MD`

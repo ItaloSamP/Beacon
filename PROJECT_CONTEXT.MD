@@ -1,8 +1,9 @@
 # Project Context — Beacon
 
-> **Last Updated:** 2026-06-19T18:00:00Z | **Maintained By:** AI Agent Team
+> **Last Updated:** 2026-06-27T18:00:00Z | **Maintained By:** AI Agent Team
 > **Architecture:** Hybrid (Agent + Cloud Monolith)
-> **Current Sprint:** Sprint 2 (Confiabilidade & Regras de Alerta) — Implementação avançada | Sprint 1 completo | Issue #4 (Design System) completo | Issue #23-30 (CI + E2E) completo | Issue #35 (Pipeline Runner + AlertRules + Codecov + Docker) completo
+> **Current Phase:** MVP completo (~85%) | Post-MVP Roadmap definido (4 fases) — ver `.opencode/work/tasks/task-beacon-post-mvp.md`
+> **Sprints concluídos:** Sprint 0 (Foundation), Sprint 1 (Core Features), Sprint 2 (Reliability & Alert Rules), Design System (#4), CI + E2E (#23-30), Pipeline Runner + AlertRules + Codecov + Docker (#35), Docs Hub (#31), Quality Hub (#26), Deploy blueprint (#29)
 
 ---
 
@@ -48,13 +49,12 @@ Diferente de ferramentas de visualização (Metabase) ou monitoramento de infra 
 - ✅ E2E CI pipeline (Playwright, 12/14 tests pass, auto-issue on failure)
 - ✅ 5 GitHub Actions workflows (backend, frontend, agent, docker-build, e2e)
 
-**Key Features (futuro):**
-- Suporte a MySQL, BigQuery, Google Sheets
-- Alertas via Slack, métodos estatísticos avançados (IQR, médias móveis)
-- Agendamento automático de pipelines (cron)
-- Multi-membro e workspaces com papéis (Owner, Editor, Viewer)
-- Relatório semanal automático
-- Daemon mode do agente (hoje apenas CLI foreground/manual)
+**Key Features (futuro — Roadmap 4 Fases):**
+- 🚀 **Fase 1 — Motor de Detecção:** 5 novos profilers (cardinalidade, distribuição, frescor, formato, duplicatas), IQR + moving average + CUSUM, modelagem de sazonalidade
+- 🚀 **Fase 2 — Onboarding:** Wizard de 3 passos, auto-discovery de tabelas, Slack + digest de alertas, blackout windows
+- 🚀 **Fase 3 — Segurança:** mTLS + certificate pinning, SQLCipher, MFA + SSO, RBAC multi-member, audit log WORM
+- 🚀 **Fase 4 — Expansão:** MySQL + BigQuery + Google Sheets, dashboard com health timeline/sparklines/hover diffs, relatório semanal, agente daemon
+- **Roadmap completo:** `.opencode/work/tasks/task-beacon-post-mvp.md` | **Protótipos:** 21 telas em `.opencode/work/design-prototypes/` | **Figma:** 12 telas publicadas em `uq30Y3KWwjVleDbBJwmlUz`
 
 ---
 
@@ -464,7 +464,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 | Icon Library | Lucide React |
 | Component Library | Custom only — 23 UI components built with TailwindCSS + Radix primitives (alert-dialog, dialog, select) |
 | Design Tokens | TailwindCSS v4 CSS-based config (`@theme` block in `frontend/src/index.css`) — NÃO usa `tailwind.config.ts` |
-| Design Prototypes | 11 HTML prototypes em `.opencode/work/design-prototypes/` (dashboard, agents, anomalies, datasources, pipelines, login, signup, landing, forgot-password, anomaly-detail, datasource-detail) |
+| Design Prototypes | 21 HTML prototypes em `.opencode/work/design-prototypes/` — cobrindo Fases 1-4 do roadmap (dashboard, agents, anomalies, datasources, pipelines, auth, anomaly-detail, onboarding-wizard, settings, mfa-setup, audit-log, workspace-members, dashboard-redesign, weekly-report, security-dashboard, etc.) |
 
 **Accessibility:** WCAG 2.1 AA minimum — color contrast 4.5:1, keyboard navigation, screen reader support, focus management.
 
