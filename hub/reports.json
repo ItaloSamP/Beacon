@@ -1,0 +1,232 @@
+{
+  "generated_at": "2026-06-27T01:15:00Z",
+  "commit": "a7f3c2e1b9d456f8a0c1234567890abcdef1234",
+  "branch": "main",
+  "components": {
+    "backend": {
+      "status": "pass",
+      "tests": { "passed": 142, "failed": 0, "skipped": 3, "total": 145 },
+      "coverage": 87.4,
+      "lint_issues": 2,
+      "security_issues": { "high": 0, "medium": 1, "low": 3 }
+    },
+    "frontend": {
+      "status": "warning",
+      "tests": { "passed": 98, "failed": 2, "skipped": 0, "total": 100 },
+      "coverage": 79.2,
+      "lint_issues": 8,
+      "security_issues": { "high": 0, "medium": 2, "low": 1 }
+    },
+    "agent": {
+      "status": "pass",
+      "tests": { "passed": 67, "failed": 0, "skipped": 1, "total": 68 },
+      "coverage": 91.6,
+      "lint_issues": 0,
+      "security_issues": { "high": 0, "medium": 0, "low": 0 }
+    },
+    "docker": {
+      "status": "built",
+      "images": [
+        { "name": "beacon-backend", "tag": "0.2.1-a7f3c2e", "size_mb": 142.8 },
+        { "name": "beacon-frontend", "tag": "0.2.1-a7f3c2e", "size_mb": 38.5 },
+        { "name": "beacon-agent", "tag": "0.2.1-a7f3c2e", "size_mb": 96.2 }
+      ]
+    },
+    "e2e": {
+      "status": "pass",
+      "tests": { "passed": 17, "failed": 0, "skipped": 0, "total": 17 }
+    }
+  },
+  "coverage_trend": [
+    { "date": "2026-05-29", "backend": 82.1, "frontend": 72.4, "agent": 85.3 },
+    { "date": "2026-05-30", "backend": 82.3, "frontend": 72.6, "agent": 85.3 },
+    { "date": "2026-05-31", "backend": 82.8, "frontend": 72.5, "agent": 85.7 },
+    { "date": "2026-06-01", "backend": 83.0, "frontend": 72.9, "agent": 85.7 },
+    { "date": "2026-06-02", "backend": 83.4, "frontend": 73.1, "agent": 86.0 },
+    { "date": "2026-06-03", "backend": 83.4, "frontend": 73.5, "agent": 86.2 },
+    { "date": "2026-06-04", "backend": 83.9, "frontend": 73.8, "agent": 86.2 },
+    { "date": "2026-06-05", "backend": 84.0, "frontend": 73.6, "agent": 86.5 },
+    { "date": "2026-06-06", "backend": 84.3, "frontend": 74.0, "agent": 86.5 },
+    { "date": "2026-06-07", "backend": 84.3, "frontend": 74.2, "agent": 86.8 },
+    { "date": "2026-06-08", "backend": 84.5, "frontend": 74.5, "agent": 86.9 },
+    { "date": "2026-06-09", "backend": 84.8, "frontend": 74.8, "agent": 87.0 },
+    { "date": "2026-06-10", "backend": 84.7, "frontend": 74.6, "agent": 87.2 },
+    { "date": "2026-06-11", "backend": 85.0, "frontend": 75.0, "agent": 87.3 },
+    { "date": "2026-06-12", "backend": 85.2, "frontend": 75.3, "agent": 87.5 },
+    { "date": "2026-06-13", "backend": 85.1, "frontend": 75.2, "agent": 87.7 },
+    { "date": "2026-06-14", "backend": 85.5, "frontend": 75.8, "agent": 87.9 },
+    { "date": "2026-06-15", "backend": 85.6, "frontend": 76.0, "agent": 88.0 },
+    { "date": "2026-06-16", "backend": 85.8, "frontend": 76.3, "agent": 88.2 },
+    { "date": "2026-06-17", "backend": 85.9, "frontend": 76.4, "agent": 88.5 },
+    { "date": "2026-06-18", "backend": 86.1, "frontend": 76.8, "agent": 88.8 },
+    { "date": "2026-06-19", "backend": 86.3, "frontend": 77.1, "agent": 89.0 },
+    { "date": "2026-06-20", "backend": 86.4, "frontend": 77.5, "agent": 89.5 },
+    { "date": "2026-06-21", "backend": 86.6, "frontend": 78.0, "agent": 89.8 },
+    { "date": "2026-06-22", "backend": 86.8, "frontend": 78.3, "agent": 90.2 },
+    { "date": "2026-06-23", "backend": 86.9, "frontend": 78.5, "agent": 90.5 },
+    { "date": "2026-06-24", "backend": 87.0, "frontend": 78.8, "agent": 91.0 },
+    { "date": "2026-06-25", "backend": 87.2, "frontend": 79.0, "agent": 91.3 },
+    { "date": "2026-06-26", "backend": 87.3, "frontend": 79.1, "agent": 91.4 },
+    { "date": "2026-06-27", "backend": 87.4, "frontend": 79.2, "agent": 91.6 }
+  ],
+  "security_issues": [
+    {
+      "severity": "high",
+      "cwe": "CWE-89",
+      "file": "app/infrastructure/repositories/pipeline_repo.py",
+      "line": 134,
+      "description": "SQL injection vulnerability: f-string interpolation in raw SQL query for dynamic table name."
+    },
+    {
+      "severity": "high",
+      "cwe": "CWE-798",
+      "file": "app/shared/config.py",
+      "line": 28,
+      "description": "Hardcoded secret: JWT_SECRET embedded as default string literal."
+    },
+    {
+      "severity": "high",
+      "cwe": "CWE-22",
+      "file": "app/presentation/api/routes/datasources.py",
+      "line": 89,
+      "description": "Path traversal: unsanitized user input used in file path construction for export endpoint."
+    },
+    {
+      "severity": "medium",
+      "cwe": "CWE-327",
+      "file": "app/infrastructure/security.py",
+      "line": 45,
+      "description": "Weak cryptography: MD5 hash used for non-critical checksum (should use SHA-256)."
+    },
+    {
+      "severity": "medium",
+      "cwe": "CWE-200",
+      "file": "app/presentation/api/routes/auth.py",
+      "line": 67,
+      "description": "Information exposure: error response reveals whether email is registered during login."
+    },
+    {
+      "severity": "medium",
+      "cwe": "CWE-862",
+      "file": "frontend/src/features/pipelines/PipelineForm.tsx",
+      "line": 156,
+      "description": "Missing authorization check: pipeline owner not verified before update operation."
+    },
+    {
+      "severity": "medium",
+      "cwe": "CWE-79",
+      "file": "frontend/src/components/ui/Table.tsx",
+      "line": 42,
+      "description": "Potential XSS: user-provided cell content rendered via innerHTML without sanitization."
+    },
+    {
+      "severity": "low",
+      "cwe": "CWE-209",
+      "file": "app/presentation/exceptions.py",
+      "line": 34,
+      "description": "Verbose error message: stack trace details included in API error response body."
+    },
+    {
+      "severity": "low",
+      "cwe": "CWE-918",
+      "file": "agent/api_client.py",
+      "line": 112,
+      "description": "Server-Side Request Forgery (SSRF): cloud URL from env var used directly in httpx request without validation."
+    },
+    {
+      "severity": "low",
+      "cwe": "CWE-319",
+      "file": "agent/cli.py",
+      "line": 78,
+      "description": "Cleartext transmission: agent token passed as CLI argument (visible in process list)."
+    },
+    {
+      "severity": "low",
+      "cwe": "CWE-732",
+      "file": "scripts/setup_db.ps1",
+      "line": 12,
+      "description": "Incorrect file permissions: database backup directory world-readable."
+    }
+  ],
+  "test_failures": [
+    {
+      "component": "frontend",
+      "test": "PipelinesListPage › renders pipeline status badges",
+      "file": "frontend/src/features/pipelines/__tests__/PipelinesListPage.test.tsx",
+      "line": 78,
+      "error": "AssertionError: expected 'warning' to equal 'success' — PipelineRun status mismatch after mock update",
+      "stack_trace": "Error: AssertionError: expected 'warning' to equal 'success'\n    at Object.<anonymous> (frontend/src/features/pipelines/__tests__/PipelinesListPage.test.tsx:78:35)\n    at TestScheduler.scheduleTests (node_modules/@vitest/runner/dist/index.js:135:5)\n    at runNextTicks (node:internal/process/task_queues:60:5)\n    at listOnTimeout (node:internal/timers:545:9)\n    at process.processTimers (node:internal/timers:519:7)",
+      "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/1234567890"
+    },
+    {
+      "component": "frontend",
+      "test": "AuthProvider › handles token expiration gracefully",
+      "file": "frontend/src/hooks/__tests__/useAuth.test.tsx",
+      "line": 45,
+      "error": "TypeError: Cannot read properties of undefined (reading 'access_token') — refresh endpoint returned 422",
+      "stack_trace": "TypeError: Cannot read properties of undefined (reading 'access_token')\n    at refreshToken (frontend/src/hooks/useAuth.ts:88:22)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async AuthProvider (frontend/src/hooks/useAuth.tsx:34:7)",
+      "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/1234567890"
+    },
+    {
+      "component": "backend",
+      "test": "test_pipeline_runner_execution",
+      "file": "tests/application/test_pipeline_runner.py",
+      "line": 203,
+      "error": "AssertionError: assert 'error' == 'success' — PipelineRun status not updated after execution",
+      "stack_trace": "AssertionError: assert 'error' == 'success'\n  +  where 'error' = PipelineRun.status\n    at test_pipeline_runner_execution (tests/application/test_pipeline_runner.py:203:19)\n    at async call (app/conftest.py:25:5)",
+      "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/1234567891"
+    },
+    {
+      "component": "backend",
+      "test": "test_alert_dispatcher_threshold_enforcement",
+      "file": "tests/application/test_alert_dispatcher.py",
+      "line": 156,
+      "error": "AssertionError: AlertRule threshold not enforced — alert dispatched despite metric below threshold",
+      "stack_trace": "AssertionError: AlertRule threshold not enforced\n    at test_alert_dispatcher_threshold_enforcement (tests/application/test_alert_dispatcher.py:156:24)\n    at async call (app/conftest.py:25:5)",
+      "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/1234567891"
+    },
+    {
+      "component": "agent",
+      "test": "test_null_profiler_empty_table",
+      "file": "agent/tests/profiling/test_null_check.py",
+      "line": 67,
+      "error": "ZeroDivisionError: division by zero — empty table has zero rows, null_pct calculation divides by row_count",
+      "stack_trace": "ZeroDivisionError: division by zero\n    at null_pct = null_count / row_count (agent/profiling/null_check.py:34:12)\n    at test_null_profiler_empty_table (agent/tests/profiling/test_null_check.py:67:5)\n    at async call (agent/tests/conftest.py:12:5)",
+      "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/1234567892"
+    }
+  ],
+  "lint_warnings": [
+    { "component": "frontend", "file": "frontend/src/features/pipelines/PipelineForm.tsx", "line": 45, "message": "Unexpected any. Specify a different type.", "rule": "@typescript-eslint/no-explicit-any" },
+    { "component": "frontend", "file": "frontend/src/features/pipelines/PipelineForm.tsx", "line": 89, "message": "React Hook useEffect has a missing dependency: 'pipelineId'.", "rule": "react-hooks/exhaustive-deps" },
+    { "component": "frontend", "file": "frontend/src/components/ui/Table.tsx", "line": 34, "message": "Missing return type on function.", "rule": "@typescript-eslint/explicit-function-return-type" },
+    { "component": "frontend", "file": "frontend/src/components/ui/Modal.tsx", "line": 22, "message": "'handleClose' is assigned a value but never used.", "rule": "@typescript-eslint/no-unused-vars" },
+    { "component": "frontend", "file": "frontend/src/hooks/useAuth.ts", "line": 12, "message": "Unexpected any. Specify a different type.", "rule": "@typescript-eslint/no-explicit-any" },
+    { "component": "frontend", "file": "frontend/src/lib/api.ts", "line": 56, "message": "Unnecessary 'else' after 'return'.", "rule": "no-else-return" },
+    { "component": "frontend", "file": "frontend/src/features/anomalies/AnomalyDetailPage.tsx", "line": 112, "message": "img elements must have an alt prop.", "rule": "jsx-a11y/alt-text" },
+    { "component": "frontend", "file": "frontend/src/pages/DashboardPage.tsx", "line": 78, "message": "Fragment with only one child is unnecessary.", "rule": "react/jsx-no-useless-fragment" },
+    { "component": "backend", "file": "app/application/pipeline_runner.py", "line": 67, "message": "Catching too general exception Exception", "rule": "TRY002 (Ruff)" },
+    { "component": "backend", "file": "app/presentation/api/routes/datasources.py", "line": 145, "message": "Unused import 'json'", "rule": "F401 (Ruff)" }
+  ],
+  "history": [
+    { "date": "2026-06-27T01:15:00Z", "commit": "a7f3c2e", "commit_msg": "feat(agent): add MySQL connector support", "status": "pass", "duration_seconds": 342, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/127" },
+    { "date": "2026-06-26T18:42:00Z", "commit": "b2d5f7a", "commit_msg": "fix(backend): resolve asyncpg event loop crash on Windows", "status": "warning", "duration_seconds": 298, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/126" },
+    { "date": "2026-06-26T14:30:00Z", "commit": "c1e8a3b", "commit_msg": "feat(frontend): add dark mode toggle to dashboard", "status": "pass", "duration_seconds": 215, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/125" },
+    { "date": "2026-06-26T09:15:00Z", "commit": "d4f9b2c", "commit_msg": "chore(deps): upgrade TailwindCSS to v4", "status": "pass", "duration_seconds": 198, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/124" },
+    { "date": "2026-06-25T22:00:00Z", "commit": "e7a1d4f", "commit_msg": "fix(agent): handle empty table edge case in null profiler", "status": "fail", "duration_seconds": 267, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/123" },
+    { "date": "2026-06-25T17:10:00Z", "commit": "f2b6c8d", "commit_msg": "feat(backend): add Codecov integration with 3 flags", "status": "pass", "duration_seconds": 234, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/122" },
+    { "date": "2026-06-25T12:45:00Z", "commit": "a9c3e7f", "commit_msg": "fix(frontend): resolve Radix Dialog accessibility warnings", "status": "pass", "duration_seconds": 189, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/121" },
+    { "date": "2026-06-25T08:20:00Z", "commit": "b5d8f1a", "commit_msg": "feat(ci): add Docker build & push workflow to ghcr.io", "status": "pass", "duration_seconds": 512, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/120" },
+    { "date": "2026-06-24T19:55:00Z", "commit": "c2e6b9d", "commit_msg": "fix(agent): prevent phantom alerts on DB connection failure", "status": "pass", "duration_seconds": 276, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/119" },
+    { "date": "2026-06-24T15:30:00Z", "commit": "d8f3a5c", "commit_msg": "feat(backend): add AlertRules CRUD with threshold enforcement", "status": "pass", "duration_seconds": 345, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/118" },
+    { "date": "2026-06-24T10:10:00Z", "commit": "e1a9c7b", "commit_msg": "refactor(backend): extract PipelineRunner into application service", "status": "pass", "duration_seconds": 228, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/117" },
+    { "date": "2026-06-23T21:40:00Z", "commit": "f4b2d6e", "commit_msg": "fix(security): add user isolation via ownership chain", "status": "pass", "duration_seconds": 310, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/116" },
+    { "date": "2026-06-23T16:25:00Z", "commit": "a7c3e1f", "commit_msg": "feat(frontend): add AnomalyDetailPage with evidence panel", "status": "pass", "duration_seconds": 202, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/115" },
+    { "date": "2026-06-23T11:00:00Z", "commit": "b9d5f3a", "commit_msg": "chore: reorganize test directory structure", "status": "pass", "duration_seconds": 241, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/114" },
+    { "date": "2026-06-22T20:15:00Z", "commit": "c5e8b1d", "commit_msg": "feat(agent): add SQLite offline alert queue with sync", "status": "pass", "duration_seconds": 335, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/113" },
+    { "date": "2026-06-22T14:50:00Z", "commit": "d1a9f5c", "commit_msg": "fix(e2e): stabilize flaky Playwright dashboard test", "status": "pass", "duration_seconds": 185, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/112" },
+    { "date": "2026-06-22T09:30:00Z", "commit": "e3b7c9a", "commit_msg": "feat(frontend): add DataSourceDetailPage with health metrics", "status": "pass", "duration_seconds": 287, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/111" },
+    { "date": "2026-06-21T18:45:00Z", "commit": "f6c1e3b", "commit_msg": "chore: add ruff linting to CI pipeline", "status": "pass", "duration_seconds": 164, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/110" },
+    { "date": "2026-06-21T13:20:00Z", "commit": "a2d5f7c", "commit_msg": "fix(backend): resolve email validator deliverability check in tests", "status": "pass", "duration_seconds": 256, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/109" },
+    { "date": "2026-06-21T08:00:00Z", "commit": "b7e9c1d", "commit_msg": "feat: add Docker Compose for complete dev environment", "status": "pass", "duration_seconds": 423, "ci_url": "https://github.com/beacon-ai/beacon/actions/runs/108" }
+  ]
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Beacon Quality Hub — real-time quality metrics dashboard">
+  <meta name="color-scheme" content="light dark">
+  <title>Beacon Quality Hub</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- TailwindCSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
+          },
+          colors: {
+            primary:      { DEFAULT: '#2563eb', hover: '#1d4ed7', light: '#dbeafe', dark: '#1e40af', 50: '#eff6ff' },
+            success:      { DEFAULT: '#16a34a', light: '#dcfce7', dark: '#166534' },
+            warning:      { DEFAULT: '#ca8a04', light: '#fef9c3', dark: '#854d0e' },
+            danger:       { DEFAULT: '#dc2626', light: '#fee2e2', dark: '#991b1b' },
+            critical:     { DEFAULT: '#7c3aed', light: '#f5f3ff' },
+            bg:           { DEFAULT: '#f9fafb', dark: '#0f172a' },
+            surface:      { DEFAULT: '#ffffff', hover: '#f3f4f6', dark: '#1e293b', darkhover: '#334155' },
+            border:       { DEFAULT: '#e5e7eb', strong: '#d1d5db', dark: '#334155' },
+            text:         { primary: '#111827', secondary: '#4b5563', muted: '#6b7280', inverse: '#ffffff', darkprimary: '#f1f5f9', darksecondary: '#94a3b8', darkmuted: '#64748b' },
+          },
+        },
+      },
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen bg-[#f9fafb] dark:bg-[#0f172a] text-[#111827] dark:text-[#f1f5f9] font-sans transition-colors duration-200">
+
+  <!-- ===== HEADER ===== -->
+  <header class="bg-white dark:bg-[#1e293b] border-b border-[#e5e7eb] dark:border-[#334155] shadow-sm sticky top-0 z-50">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo + Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-[#111827] dark:text-[#f1f5f9] leading-tight">Beacon Quality Hub</h1>
+            <p id="header-updated" class="text-xs text-[#6b7280] dark:text-[#64748b]">Loading…</p>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Auto-refresh indicator -->
+          <span id="refresh-indicator" class="hidden items-center gap-1 text-xs text-[#6b7280] dark:text-[#64748b]">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+            <span id="refresh-countdown">60s</span>
+          </span>
+
+          <!-- Export button -->
+          <button id="btn-export-json" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155] transition-colors" title="Export as JSON">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">JSON</span>
+          </button>
+          <button id="btn-export-csv" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155] transition-colors" title="Export as CSV">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">CSV</span>
+          </button>
+
+          <!-- Dark mode toggle -->
+          <button id="btn-dark-mode" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155] transition-colors" title="Toggle dark mode" aria-label="Toggle dark mode">
+            <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+            <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Filter Bar ===== -->
+  <div id="filter-bar" class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 flex flex-wrap items-center gap-2">
+    <span class="text-xs font-medium text-[#4b5563] dark:text-[#94a3b8] mr-1">Filter:</span>
+    <button class="filter-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors bg-primary text-white border-primary" data-filter="all">
+      All
+    </button>
+    <button class="filter-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155]" data-filter="backend">
+      Backend
+    </button>
+    <button class="filter-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155]" data-filter="frontend">
+      Frontend
+    </button>
+    <button class="filter-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155]" data-filter="agent">
+      Agent
+    </button>
+    <button class="filter-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155]" data-filter="docker">
+      Docker
+    </button>
+    <button class="filter-btn inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors border-[#e5e7eb] dark:border-[#334155] text-[#4b5563] dark:text-[#94a3b8] hover:bg-[#f3f4f6] dark:hover:bg-[#334155]" data-filter="e2e">
+      E2E
+    </button>
+    <span class="text-xs text-[#6b7280] dark:text-[#64748b] mx-1">|</span>
+    <label class="text-xs text-[#4b5563] dark:text-[#94a3b8]">
+      Date: <input type="date" id="filter-date-start" class="ml-1 px-2 py-0.5 text-xs rounded border border-[#e5e7eb] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#111827] dark:text-[#f1f5f9]">
+    </label>
+    <span class="text-xs text-[#6b7280] dark:text-[#64748b]">to</span>
+    <input type="date" id="filter-date-end" class="px-2 py-0.5 text-xs rounded border border-[#e5e7eb] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#111827] dark:text-[#f1f5f9]">
+    <button id="btn-clear-filters" class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-[#6b7280] dark:text-[#64748b] hover:text-[#111827] dark:hover:text-[#f1f5f9] transition-colors">
+      <i data-lucide="x" class="w-3 h-3"></i> Clear
+    </button>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ===== Status Cards ===== -->
+    <section aria-labelledby="section-status">
+      <h2 id="section-status" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9] mb-3">Component Status</h2>
+      <div id="status-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- ===== Coverage Trend + Security Issues ===== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Coverage Trend -->
+      <section class="lg:col-span-2" aria-labelledby="section-coverage">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-[#e5e7eb] dark:border-[#334155] shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 id="section-coverage" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9]">Coverage Trend</h2>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 text-xs text-[#6b7280] dark:text-[#64748b]">
+                <span class="w-2.5 h-2.5 rounded-full bg-primary"></span> Backend
+              </span>
+              <span class="inline-flex items-center gap-1 text-xs text-[#6b7280] dark:text-[#64748b]">
+                <span class="w-2.5 h-2.5 rounded-full bg-success"></span> Frontend
+              </span>
+              <span class="inline-flex items-center gap-1 text-xs text-[#6b7280] dark:text-[#64748b]">
+                <span class="w-2.5 h-2.5 rounded-full bg-critical"></span> Agent
+              </span>
+            </div>
+          </div>
+          <div id="coverage-chart" class="relative h-64">
+            <canvas id="coverage-canvas" class="w-full h-full"></canvas>
+            <!-- Fallback sparklines rendered in JS if canvas unsupported -->
+            <div id="coverage-sparklines" class="hidden space-y-4"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security Issues -->
+      <section class="lg:col-span-1" aria-labelledby="section-security">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-[#e5e7eb] dark:border-[#334155] shadow-sm p-5 h-full">
+          <h2 id="section-security" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9] mb-3">Security</h2>
+          <div id="security-list" class="space-y-1.5 max-h-[480px] overflow-y-auto custom-scrollbar">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== Test Failures ===== -->
+    <section aria-labelledby="section-tests">
+      <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-[#e5e7eb] dark:border-[#334155] shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="section-tests" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9]">Test Failures</h2>
+          <span id="test-failure-count" class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full bg-danger-light dark:bg-red-900/30 text-danger-dark dark:text-red-300">0</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[#e5e7eb] dark:border-[#334155]">
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8]">Component</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8]">Test</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8] hidden sm:table-cell">File</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8]">Error</th>
+                <th class="text-left py-2 font-medium text-[#4b5563] dark:text-[#94a3b8] hidden md:table-cell">CI</th>
+              </tr>
+            </thead>
+            <tbody id="test-failures-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+          <p id="test-failures-empty" class="hidden text-center py-6 text-sm text-[#6b7280] dark:text-[#64748b]">
+            <i data-lucide="check-circle" class="w-5 h-5 inline-block text-success mr-1"></i>
+            All tests passing — no failures detected.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Docker Images + Lint Warnings ===== -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Docker Images -->
+      <section aria-labelledby="section-docker">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-[#e5e7eb] dark:border-[#334155] shadow-sm p-5">
+          <h2 id="section-docker" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9] mb-3">Docker Images</h2>
+          <div id="docker-list" class="space-y-3">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Lint Warnings -->
+      <section aria-labelledby="section-lint">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-[#e5e7eb] dark:border-[#334155] shadow-sm p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 id="section-lint" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9]">Lint Warnings</h2>
+            <span id="lint-warning-count" class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold rounded-full bg-warning-light dark:bg-yellow-900/30 text-warning-dark dark:text-yellow-300">0</span>
+          </div>
+          <div id="lint-list" class="space-y-2 max-h-[360px] overflow-y-auto custom-scrollbar">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== History Table ===== -->
+    <section aria-labelledby="section-history">
+      <div class="bg-white dark:bg-[#1e293b] rounded-xl border border-[#e5e7eb] dark:border-[#334155] shadow-sm p-5">
+        <h2 id="section-history" class="text-base font-semibold text-[#111827] dark:text-[#f1f5f9] mb-4">Run History <span class="text-sm font-normal text-[#6b7280] dark:text-[#64748b]">(last 20)</span></h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[#e5e7eb] dark:border-[#334155]">
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8]">Date</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8]">Commit</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8] hidden sm:table-cell">Message</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8]">Status</th>
+                <th class="text-left py-2 pr-3 font-medium text-[#4b5563] dark:text-[#94a3b8] hidden md:table-cell">Duration</th>
+                <th class="text-left py-2 font-medium text-[#4b5563] dark:text-[#94a3b8] hidden lg:table-cell">CI</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Footer ===== -->
+    <footer class="text-center py-4 text-xs text-[#6b7280] dark:text-[#64748b]">
+      <p>Beacon Quality Hub · Auto-refreshes every 60s · Powered by <a href="#" class="underline hover:text-primary">Beacon CI</a></p>
+    </footer>
+
+  </main>
+
+  <!-- App JS -->
+  <script src="app.js"></script>
+</body>
+</html>
