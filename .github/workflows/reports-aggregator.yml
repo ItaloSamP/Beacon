@@ -7,7 +7,7 @@ on:
       - '**.md'
       - '.opencode/**'
   schedule:
-    - cron: '*/10 * * * *'  # every 10 minutes
+    - cron: '0 6 * * *'  # daily 06:00 UTC (matches other CI schedules)
   workflow_dispatch:  # manual trigger for testing
 
 permissions:
@@ -29,38 +29,53 @@ jobs:
           ref: main
 
       - name: Download backend-coverage artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: backend-ci.yml
+          workflow_conclusion: success
           name: backend-coverage
           path: artifacts/backend-coverage
+          github_token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Download frontend-coverage artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: frontend-ci.yml
+          workflow_conclusion: success
           name: frontend-coverage
           path: artifacts/frontend-coverage
+          github_token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Download coverage-agent artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: agent-ci.yml
+          workflow_conclusion: success
           name: coverage-agent
           path: artifacts/coverage-agent
+          github_token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Download docker-build-report artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: docker-build.yml
+          workflow_conclusion: success
           name: docker-build-report
           path: artifacts/docker-build-report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Download playwright-report artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
+          workflow: e2e-ci.yml
+          workflow_conclusion: success
           name: playwright-report
           path: artifacts/playwright-report
+          github_token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Generate reports.json
