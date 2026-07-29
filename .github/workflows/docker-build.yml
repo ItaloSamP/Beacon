@@ -65,6 +65,26 @@ jobs:
     steps:
       - name: Lowercase repository owner
         run: echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Generate docker report JSON
+        run: |
+          SUCCESS="${{ needs.build-and-push.result == 'success' }}"
+          python -c "
+          import json
+          report = {
+              'backend': {'built': $SUCCESS, 'tag': 'ghcr.io/${{ env.OWNER_LC }}/beacon-backend:${{ github.sha }}'},
+              'frontend': {'built': $SUCCESS, 'tag': 'ghcr.io/${{ env.OWNER_LC }}/beacon-frontend:${{ github.sha }}'},
+              'agent': {'built': $SUCCESS, 'tag': 'ghcr.io/${{ env.OWNER_LC }}/beacon-agent:${{ github.sha }}'},
+          }
+          with open('docker-report.json', 'w') as f:
+              json.dump(report, f)
+          "
+      - name: Upload docker build report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-build-report
+          path: docker-report.json
+          retention-days: 7
       - name: Summary
         run: |
           if [ "${{ needs.build-and-push.result }}" = "success" ]; then
