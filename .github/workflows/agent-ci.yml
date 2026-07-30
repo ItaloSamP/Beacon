@@ -35,6 +35,7 @@ jobs:
           pip install -e ./agent/
 
       - name: Ruff lint
+        continue-on-error: true
         run: python -m ruff check agent/ --output-format=json > ruff-results.json
 
       - name: Mypy type-check

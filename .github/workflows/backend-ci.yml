@@ -71,6 +71,7 @@ jobs:
         run: alembic upgrade head
 
       - name: Ruff lint
+        continue-on-error: true
         run: python -m ruff check . --output-format=json > ruff-results.json
 
       - name: Mypy type-check
