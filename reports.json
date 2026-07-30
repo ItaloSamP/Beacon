@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-30T19:02:53Z",
-  "commit": "376e5929c1ed25be3dbb13eb6e9127adf53fec2f",
+  "generated_at": "2026-07-30T19:46:40Z",
+  "commit": "715ac34ad5df83aef506160a0beaa82f4488da83",
   "branch": "main",
   "components": {
     "backend": {
@@ -13,24 +13,52 @@
       "build": null
     },
     "frontend": {
-      "status": "pending",
-      "tests": null,
-      "coverage": null,
-      "lint": null,
-      "type_check": {
+      "status": "success",
+      "tests": {
+        "passed": 760,
+        "failed": 0,
+        "skipped": 0,
+        "total": 760
+      },
+      "coverage": {
+        "statements": 0,
+        "branches": 0,
+        "functions": 0,
+        "lines": 0
+      },
+      "lint": {
         "passed": false,
+        "issues": 74
+      },
+      "type_check": {
+        "passed": true,
         "errors": 0
       },
       "security": null,
-      "build": null
+      "build": {
+        "passed": true
+      }
     },
     "agent": {
-      "status": "pending",
-      "tests": null,
-      "coverage": null,
-      "lint": null,
+      "status": "success",
+      "tests": {
+        "passed": 2750,
+        "failed": 0,
+        "skipped": 0,
+        "total": 2793
+      },
+      "coverage": {
+        "statements": 98.46043680630147,
+        "branches": 98.46043680630147,
+        "functions": 98.46043680630147,
+        "lines": 98.46043680630147
+      },
+      "lint": {
+        "passed": true,
+        "issues": 0
+      },
       "type_check": {
-        "passed": false,
+        "passed": true,
         "errors": 0
       },
       "security": null,
@@ -62,8 +90,8 @@
   },
   "history": [
     {
-      "generated_at": "2026-07-30T19:02:53Z",
-      "commit": "376e5929c1ed25be3dbb13eb6e9127adf53fec2f",
+      "generated_at": "2026-07-30T19:46:40Z",
+      "commit": "715ac34ad5df83aef506160a0beaa82f4488da83",
       "branch": "main",
       "components": {
         "backend": {
@@ -76,24 +104,52 @@
           "build": null
         },
         "frontend": {
-          "status": "pending",
-          "tests": null,
-          "coverage": null,
-          "lint": null,
-          "type_check": {
+          "status": "success",
+          "tests": {
+            "passed": 760,
+            "failed": 0,
+            "skipped": 0,
+            "total": 760
+          },
+          "coverage": {
+            "statements": 0,
+            "branches": 0,
+            "functions": 0,
+            "lines": 0
+          },
+          "lint": {
             "passed": false,
+            "issues": 74
+          },
+          "type_check": {
+            "passed": true,
             "errors": 0
           },
           "security": null,
-          "build": null
+          "build": {
+            "passed": true
+          }
         },
         "agent": {
-          "status": "pending",
-          "tests": null,
-          "coverage": null,
-          "lint": null,
+          "status": "success",
+          "tests": {
+            "passed": 2750,
+            "failed": 0,
+            "skipped": 0,
+            "total": 2793
+          },
+          "coverage": {
+            "statements": 98.46043680630147,
+            "branches": 98.46043680630147,
+            "functions": 98.46043680630147,
+            "lines": 98.46043680630147
+          },
+          "lint": {
+            "passed": true,
+            "issues": 0
+          },
           "type_check": {
-            "passed": false,
+            "passed": true,
             "errors": 0
           },
           "security": null,
