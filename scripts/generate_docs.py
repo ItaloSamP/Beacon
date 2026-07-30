@@ -28,7 +28,6 @@ import logging
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -74,13 +73,13 @@ def parse_sections(content: str) -> dict[str, str]:
     return sections
 
 
-def extract_section(content: str, section_num: str) -> Optional[str]:
+def extract_section(content: str, section_num: str) -> str | None:
     """Extract a specific numbered section from PROJECT_CONTEXT.md content."""
     sections = parse_sections(content)
     return sections.get(section_num)
 
 
-def read_file_safe(filepath: Path) -> Optional[str]:
+def read_file_safe(filepath: Path) -> str | None:
     """Read a file, returning None if it doesn't exist or can't be read."""
     try:
         if not filepath.exists():

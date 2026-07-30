@@ -1,6 +1,6 @@
 # Design Context — Beacon
 
-> **Last Updated:** 2026-06-19 | **Figma:** https://www.figma.com/design/uq30Y3KWwjVleDbBJwmlUz
+> **Last Updated:** 2026-06-27 | **Figma:** https://www.figma.com/design/uq30Y3KWwjVleDbBJwmlUz
 > **Design System:** Custom (TailwindCSS v4 CSS-based `@theme` tokens)
 
 ## 1. Design System Overview
@@ -170,6 +170,8 @@ Biblioteca de 23 componentes UI em `frontend/src/components/ui/`:
 
 ## 7. Figma File Map
 
+### Telas Existentes (MVP)
+
 | Page | Content | Key Node IDs |
 |------|---------|--------------|
 | Dashboard | Cards + anomaly feed + pipeline runs feed | `node-id=...` |
@@ -180,7 +182,25 @@ Biblioteca de 23 componentes UI em `frontend/src/components/ui/`:
 | Auth | Login + Register + Forgot/Reset Password | `node-id=...` |
 | Landing | Homepage pública | `node-id=...` |
 
-> 11 protótipos HTML em `.opencode/work/design-prototypes/` para referência.
+### Telas do Roadmap Pós-MVP (12 telas publicadas)
+
+| Page | Content | Figma Node |
+|------|---------|------------|
+| AnomalyDetail (v2) | Method badge + metric breakdown + trend sparkline | `100-2` |
+| PipelineForm (v2) | Detection method cards + per-metric thresholds + baseline slider | `101-2` |
+| PipelineRuns (v2) | Expanded metric summary in table rows | `102-2` |
+| Dashboard (v2) | Enriched feed with method + metrics inline | `103-2` |
+| Onboarding Wizard | 3-step stepper + code block + status indicator | `104-2` |
+| Settings | Toggle switches, Slack webhook, digest, blackout windows | `106-2` |
+| MFA Setup | QR code + PIN input + backup codes grid | `105-2` |
+| Audit Log | Timeline with colored dots + WORM badge + filters | `107-2` |
+| Workspace Members | Member table + role badges + permission matrix | `108-2` |
+| Dashboard Redesign | Health timeline + sparklines + hover diffs + degradation alert | `109-2` |
+| Weekly Report | Config form + preview + history table | `110-2` |
+| Security Dashboard | Score gauge + security items grid + token expiry + recent access | `111-2` |
+
+> 21 protótipos HTML em `.opencode/work/design-prototypes/` para referência (11 originais + 12 do roadmap).
+> Plano completo em `.opencode/work/tasks/task-beacon-post-mvp.md`.
 
 ## 8. Assets
 

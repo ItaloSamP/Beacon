@@ -37,6 +37,9 @@ frontend/coverage/
 frontend/playwright-report/
 frontend/test-results/
 
+# MkDocs build output
+site/
+
 # Alembic
 alembic/versions/*.pyc
 
