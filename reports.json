@@ -1,15 +1,31 @@
 {
-  "generated_at": "2026-07-30T19:46:40Z",
-  "commit": "715ac34ad5df83aef506160a0beaa82f4488da83",
+  "generated_at": "2026-07-30T20:07:39Z",
+  "commit": "fd8d30a764d47a482b880858959930b31a0aeccd",
   "branch": "main",
   "components": {
     "backend": {
-      "status": "pending",
-      "tests": null,
-      "coverage": null,
-      "lint": null,
+      "status": "success",
+      "tests": {
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "total": 0
+      },
+      "coverage": {
+        "statements": 67.17171717171718,
+        "branches": 67.17171717171718,
+        "functions": 67.17171717171718,
+        "lines": 67.17171717171718
+      },
+      "lint": {
+        "passed": true,
+        "issues": 0
+      },
       "type_check": null,
-      "security": null,
+      "security": {
+        "passed": true,
+        "issues": 0
+      },
       "build": null
     },
     "frontend": {
@@ -84,23 +100,39 @@
         "failed": 0,
         "skipped": 0
       },
-      "report_url": null,
-      "status": "pending"
+      "report_url": "See GitHub Actions artifacts",
+      "status": "success"
     }
   },
   "history": [
     {
-      "generated_at": "2026-07-30T19:46:40Z",
-      "commit": "715ac34ad5df83aef506160a0beaa82f4488da83",
+      "generated_at": "2026-07-30T20:07:39Z",
+      "commit": "fd8d30a764d47a482b880858959930b31a0aeccd",
       "branch": "main",
       "components": {
         "backend": {
-          "status": "pending",
-          "tests": null,
-          "coverage": null,
-          "lint": null,
+          "status": "success",
+          "tests": {
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "total": 0
+          },
+          "coverage": {
+            "statements": 67.17171717171718,
+            "branches": 67.17171717171718,
+            "functions": 67.17171717171718,
+            "lines": 67.17171717171718
+          },
+          "lint": {
+            "passed": true,
+            "issues": 0
+          },
           "type_check": null,
-          "security": null,
+          "security": {
+            "passed": true,
+            "issues": 0
+          },
           "build": null
         },
         "frontend": {
@@ -175,8 +207,8 @@
             "failed": 0,
             "skipped": 0
           },
-          "report_url": null,
-          "status": "pending"
+          "report_url": "See GitHub Actions artifacts",
+          "status": "success"
         }
       }
     }
