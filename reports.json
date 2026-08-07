@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T08:25:56Z",
+  "generated_at": "2026-08-07T07:06:25Z",
   "commit": "fd8d30a764d47a482b880858959930b31a0aeccd",
   "branch": "main",
   "components": {
@@ -82,16 +82,16 @@
     },
     "docker": {
       "backend": {
-        "built": true,
-        "tag": "ghcr.io/italosamp/beacon-backend:fd8d30a764d47a482b880858959930b31a0aeccd"
+        "built": false,
+        "tag": null
       },
       "frontend": {
-        "built": true,
-        "tag": "ghcr.io/italosamp/beacon-frontend:fd8d30a764d47a482b880858959930b31a0aeccd"
+        "built": false,
+        "tag": null
       },
       "agent": {
-        "built": true,
-        "tag": "ghcr.io/italosamp/beacon-agent:fd8d30a764d47a482b880858959930b31a0aeccd"
+        "built": false,
+        "tag": null
       }
     },
     "e2e": {
@@ -106,7 +106,7 @@
   },
   "history": [
     {
-      "generated_at": "2026-08-06T08:25:56Z",
+      "generated_at": "2026-08-07T07:06:25Z",
       "commit": "fd8d30a764d47a482b880858959930b31a0aeccd",
       "branch": "main",
       "components": {
@@ -189,16 +189,16 @@
         },
         "docker": {
           "backend": {
-            "built": true,
-            "tag": "ghcr.io/italosamp/beacon-backend:fd8d30a764d47a482b880858959930b31a0aeccd"
+            "built": false,
+            "tag": null
           },
           "frontend": {
-            "built": true,
-            "tag": "ghcr.io/italosamp/beacon-frontend:fd8d30a764d47a482b880858959930b31a0aeccd"
+            "built": false,
+            "tag": null
           },
           "agent": {
-            "built": true,
-            "tag": "ghcr.io/italosamp/beacon-agent:fd8d30a764d47a482b880858959930b31a0aeccd"
+            "built": false,
+            "tag": null
           }
         },
         "e2e": {
