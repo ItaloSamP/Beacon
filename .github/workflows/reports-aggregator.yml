@@ -1,13 +1,6 @@
 name: Reports Aggregator
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**.md'
-      - '.opencode/**'
-  schedule:
-    - cron: '0 6 * * *'  # daily 06:00 UTC (matches other CI schedules)
   workflow_dispatch:  # manual trigger for testing
 
 permissions:
