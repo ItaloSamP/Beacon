@@ -6,9 +6,6 @@ on:
     paths:
       - 'hub/**'
   workflow_dispatch:
-  schedule:
-    # Rebuild every 6 hours to keep data fresh
-    - cron: '0 */6 * * *'
 
 permissions:
   contents: write
