@@ -17,8 +17,6 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.github/workflows/backend-ci.yml'
-  schedule:
-    - cron: '0 6 * * *'
 
 jobs:
   test:
