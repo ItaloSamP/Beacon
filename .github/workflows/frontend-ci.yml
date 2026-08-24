@@ -9,8 +9,6 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-ci.yml'
-  schedule:
-    - cron: '0 6 * * *'
 
 jobs:
   test:

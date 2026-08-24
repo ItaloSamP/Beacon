@@ -9,8 +9,6 @@ on:
     paths:
       - 'agent/**'
       - '.github/workflows/agent-ci.yml'
-  schedule:
-    - cron: '0 6 * * *'
 
 jobs:
   test:
